@@ -7,6 +7,7 @@ use rsa::RsaPublicKey;
 use sha1::{Digest, Sha1};
 use std::collections::BTreeMap;
 use std::{ffi::OsStr, fs, io::BufRead};
+use std::path::Path;
 
 use walkdir::WalkDir;
 
@@ -529,7 +530,54 @@ async fn validate_cas_stmicro() {
     .await;
 }
 
-// todo look for new folders and fail if found
+#[test]
+fn fail_on_new_folders() {
+    let trusted_tpm = include_bytes!("../TrustedTpm.cab");
+    let cursor = std::io::Cursor::new(trusted_tpm);
+    let cabinet = match cab::Cabinet::new(cursor) {
+        Ok(cabinet) => cabinet,
+        Err(e) => {
+            panic!("{e:?}");
+        }
+    };
+
+    let expected_folders = [
+        "AMD",
+        "Atmel",
+        "Infineon",
+        "Intel",
+        "Microsoft",
+        "NationZ",
+        "Nuvoton",
+        "QC",
+        "STMicro",
+    ];
+
+    let skip = ["setup.cmd", "setup.ps1", "version.txt"];
+
+    for folder in cabinet.folder_entries() {
+        for file in folder.file_entries() {
+            let file_name = file.name().replace("\\", "/");
+            if skip.contains(&file_name.as_str()) {
+                continue;
+            }
+
+            for c in Path::new(&file_name).components() {
+                if let Some(s) = c.as_os_str().to_str() {
+                    if expected_folders.contains(&s) {
+                        break;
+                    }
+                    else {
+                        panic!("{s} in an unexpected folder. Please add a unit test to validate CAs in this folder.");
+                    }
+                }
+                else {
+                    panic!("Failed to convert {c:?} to string");
+                }
+            }
+        }
+    }
+}
 
 #[tokio::test]
 async fn test_cab() {
