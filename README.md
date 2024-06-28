@@ -14,7 +14,7 @@ with a log message emitted.
 
 ## Features
 
-Two features are defined to all builds that feature certificates that would otherwise be discarded due to validation errors.
+Two features are defined to enable builds to feature certificates that would otherwise be discarded due to validation errors.
 
 `unverified_amd_roots` will cause inclusion of an AMD engineering root that is not included in the CAB file and was obtained
 from an http URI indicated in an authorityInfoAccess extension.
