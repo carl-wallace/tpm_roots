@@ -230,7 +230,7 @@ checksum = "ac367972e516d45567c7eafc73d24e1c193dcf200a8d94e9db7b3d38b349572d"
 [[package]]
 name = "certval"
 version = "0.1.4"
-source = "git+https://github.com/carl-wallace/rust-pki.git?branch=rel_with_mods#8709c3fd0c8479cb35ef8aec13351adb2a95d622"
+source = "git+https://github.com/carl-wallace/rust-pki.git#2497159ac52cf57918c5f92229463031345a1581"
 dependencies = [
  "base64ct",
  "bitvec",
@@ -1506,7 +1506,7 @@ checksum = "d231b230927b5e4ad203db57bbcbee2802f6bce620b1e4a9024a07d94e2907ec"
 [[package]]
 name = "pkiprocmacros"
 version = "0.1.2"
-source = "git+https://github.com/carl-wallace/rust-pki.git?branch=rel_with_mods#8709c3fd0c8479cb35ef8aec13351adb2a95d622"
+source = "git+https://github.com/carl-wallace/rust-pki.git#2497159ac52cf57918c5f92229463031345a1581"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2371,7 +2371,7 @@ checksum = "b6bc1c9ce2b5135ac7f93c72918fc37feb872bdc6a5533a8b85eb4b86bfdae52"
 [[package]]
 name = "tpm_cab_verify"
 version = "0.1.0"
-source = "git+https://github.com/carl-wallace/tpm_cab_verify.git#c1fb50f015a6f669f614d60815ac76a95f3b093c"
+source = "git+https://github.com/carl-wallace/tpm_cab_verify.git#1bbaa0aacb6d848b109983d91bc6dda9bd0a11e0"
 dependencies = [
  "anyhow",
  "authenticode",

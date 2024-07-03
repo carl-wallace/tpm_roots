@@ -231,7 +231,7 @@ async fn validate_intermediate_cas(
 
         if vi
             .pe
-            .get_paths_for_target(&vi.pe, &cert, &mut paths, 0, vi.cps.get_time_of_interest())
+            .get_paths_for_target(&cert, &mut paths, 0, vi.cps.get_time_of_interest())
             .is_ok()
         {
             if paths.is_empty() {

@@ -465,7 +465,7 @@ pub async fn process_cab(
         let mut paths: Vec<CertificationPath> = vec![];
         if let Ok(cert) = PDVCertificate::try_from(cf.bytes.as_slice()) {
             if pe
-                .get_paths_for_target(&pe, &cert, &mut paths, 0, cps.get_time_of_interest())
+                .get_paths_for_target(&cert, &mut paths, 0, cps.get_time_of_interest())
                 .is_ok()
             {
                 if paths.is_empty() {
