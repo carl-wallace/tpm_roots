@@ -23,7 +23,7 @@ from an http URI indicated in an authorityInfoAccess extension.
 
 ## Known issues
 
-Using a CAB file from June 14, 2024, the following errors were observed when attempting to verify intermediate CA
+Using a CAB file from December 24, 2024, the following errors were observed when attempting to verify intermediate CA
 certificates during building. Some can be addressed using features. Others will remain unaddressed until the `certval`
 crate is updated to address the issue.
 
