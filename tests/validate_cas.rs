@@ -6,8 +6,8 @@ use rsa::Pkcs1v15Sign;
 use rsa::RsaPublicKey;
 use sha1::{Digest, Sha1};
 use std::collections::BTreeMap;
-use std::{ffi::OsStr, fs, io::BufRead};
 use std::path::Path;
+use std::{ffi::OsStr, fs, io::BufRead};
 
 use walkdir::WalkDir;
 
@@ -414,6 +414,8 @@ async fn validate_cas_infineon() {
         "Infineon/IntermediateCA/OptigaEccMfrCA053.crt",
         "Infineon/IntermediateCA/OptigaEccMfrCA061.crt",
         "Infineon/IntermediateCA/OptigaEccMfrCA064.crt",
+        "Infineon/IntermediateCA/OptigaEccMfrCA065.crt",
+        "Infineon/IntermediateCA/OptigaEccMfrCA067.crt",
     ];
 
     let residual_issues = [
@@ -423,6 +425,8 @@ async fn validate_cas_infineon() {
         "Infineon/IntermediateCA/OptigaEccMfrCA053.crt",
         "Infineon/IntermediateCA/OptigaEccMfrCA061.crt",
         "Infineon/IntermediateCA/OptigaEccMfrCA064.crt",
+        "Infineon/IntermediateCA/OptigaEccMfrCA065.crt",
+        "Infineon/IntermediateCA/OptigaEccMfrCA067.crt",
     ];
 
     let mut vi = ValidationInstructions::new("tests/examples/TrustedTPM/Infineon/IntermediateCA");
@@ -477,12 +481,85 @@ async fn validate_cas_intel() {
 
 #[tokio::test]
 async fn validate_cas_microsoft() {
-    common_cases("tests/examples/TrustedTPM/microsoft/IntermediateCA", &[]).await;
+    let known_issues = [
+        "microsoft/IntermediateCA/EUS-ifx-keyid-0d9969519b979d32ee4b803165664e9cc86f9d0d.cer",
+        "microsoft/IntermediateCA/EUS-ifx-keyid-18b1af70b93f991972f362556a9a3fbf4bb24e0d.cer",
+        "microsoft/IntermediateCA/EUS-ifx-keyid-2a77a0e342cbc6c72ee3fafc3b0a7bcea7c9ce4e.cer",
+        "microsoft/IntermediateCA/EUS-ifx-keyid-2f572bbadec4d18e0d91ff4375fb468c61b8c7af.cer",
+        "microsoft/IntermediateCA/EUS-ifx-keyid-347c93cabded6168c61fdc8740a7353e46751616.cer",
+        "microsoft/IntermediateCA/EUS-ifx-keyid-37ae346baa54c513cff0290bb321a22a34a4a8c4.cer",
+        "microsoft/IntermediateCA/EUS-ifx-keyid-46f26f96330691e561b72f7a63dce3a0517039fb.cer",
+        "microsoft/IntermediateCA/EUS-ifx-keyid-5d0815951f5f60638a69e7252f3ec4becd7554b2.cer",
+        "microsoft/IntermediateCA/EUS-ifx-keyid-7cb4b78e688614be4421c5858f15b96d5eab51ee.cer",
+        "microsoft/IntermediateCA/EUS-ifx-keyid-8343bac2129d78299c4b513cc3de61037bfcc955.cer",
+        "microsoft/IntermediateCA/EUS-IFX-KEYID-97E5D1CD8B0497C04B4655A869C8F30EFA89388D.CER",
+        "microsoft/IntermediateCA/EUS-ifx-keyid-9c7df5a91c3d49bbe7378d4aba12ff8e78a2d75c.cer",
+        "microsoft/IntermediateCA/EUS-ifx-keyid-a26ceeac95fa33673219d0c2a77637102fb53ff2.cer",
+        "microsoft/IntermediateCA/EUS-ifx-keyid-ce77153b6e110ca4ae2971a09851ef499326202a.cer",
+        "microsoft/IntermediateCA/EUS-intc-keyid-17a00575d05e58e3881210bb98b1045bb4c30639.cer",
+        "microsoft/IntermediateCA/EUS-ntc-keyid-23f4e22ad3be374a449772954aa283aed752572e.cer",
+        "microsoft/IntermediateCA/EUS-ntc-keyid-882f047b87121cf9885f31160bc7bb5586af471b.cer",
+        "microsoft/IntermediateCA/NCU-ifx-keyid-0d9969519b979d32ee4b803165664e9cc86f9d0d.cer",
+        "microsoft/IntermediateCA/NCU-ifx-keyid-18b1af70b93f991972f362556a9a3fbf4bb24e0d.cer",
+        "microsoft/IntermediateCA/NCU-ifx-keyid-2a77a0e342cbc6c72ee3fafc3b0a7bcea7c9ce4e.cer",
+        "microsoft/IntermediateCA/NCU-ifx-keyid-2f572bbadec4d18e0d91ff4375fb468c61b8c7af.cer",
+        "microsoft/IntermediateCA/NCU-ifx-keyid-347c93cabded6168c61fdc8740a7353e46751616.cer",
+        "microsoft/IntermediateCA/NCU-ifx-keyid-37ae346baa54c513cff0290bb321a22a34a4a8c4.cer",
+        "microsoft/IntermediateCA/NCU-ifx-keyid-46f26f96330691e561b72f7a63dce3a0517039fb.cer",
+        "microsoft/IntermediateCA/NCU-ifx-keyid-5d0815951f5f60638a69e7252f3ec4becd7554b2.cer",
+        "microsoft/IntermediateCA/NCU-ifx-keyid-7cb4b78e688614be4421c5858f15b96d5eab51ee.cer",
+        "microsoft/IntermediateCA/NCU-ifx-keyid-8343bac2129d78299c4b513cc3de61037bfcc955.cer",
+        "microsoft/IntermediateCA/NCU-IFX-KEYID-97E5D1CD8B0497C04B4655A869C8F30EFA89388D.CER",
+        "microsoft/IntermediateCA/NCU-ifx-keyid-9c7df5a91c3d49bbe7378d4aba12ff8e78a2d75c.cer",
+        "microsoft/IntermediateCA/NCU-ifx-keyid-a26ceeac95fa33673219d0c2a77637102fb53ff2.cer",
+        "microsoft/IntermediateCA/NCU-ifx-keyid-ce77153b6e110ca4ae2971a09851ef499326202a.cer",
+        "microsoft/IntermediateCA/NCU-intc-keyid-17a00575d05e58e3881210bb98b1045bb4c30639.cer",
+        "microsoft/IntermediateCA/NCU-ntc-keyid-23f4e22ad3be374a449772954aa283aed752572e.cer",
+        "microsoft/IntermediateCA/NCU-ntc-keyid-882f047b87121cf9885f31160bc7bb5586af471b.cer",
+        "microsoft/IntermediateCA/WUS-ifx-keyid-0d9969519b979d32ee4b803165664e9cc86f9d0d.cer",
+        "microsoft/IntermediateCA/WUS-ifx-keyid-18b1af70b93f991972f362556a9a3fbf4bb24e0d.cer",
+        "microsoft/IntermediateCA/WUS-ifx-keyid-2a77a0e342cbc6c72ee3fafc3b0a7bcea7c9ce4e.cer",
+        "microsoft/IntermediateCA/WUS-ifx-keyid-2f572bbadec4d18e0d91ff4375fb468c61b8c7af.cer",
+        "microsoft/IntermediateCA/WUS-ifx-keyid-347c93cabded6168c61fdc8740a7353e46751616.cer",
+        "microsoft/IntermediateCA/WUS-ifx-keyid-37ae346baa54c513cff0290bb321a22a34a4a8c4.cer",
+        "microsoft/IntermediateCA/WUS-ifx-keyid-46f26f96330691e561b72f7a63dce3a0517039fb.cer",
+        "microsoft/IntermediateCA/WUS-ifx-keyid-5d0815951f5f60638a69e7252f3ec4becd7554b2.cer",
+        "microsoft/IntermediateCA/WUS-ifx-keyid-7cb4b78e688614be4421c5858f15b96d5eab51ee.cer",
+        "microsoft/IntermediateCA/WUS-ifx-keyid-8343bac2129d78299c4b513cc3de61037bfcc955.cer",
+        "microsoft/IntermediateCA/WUS-IFX-KEYID-97E5D1CD8B0497C04B4655A869C8F30EFA89388D.CER",
+        "microsoft/IntermediateCA/WUS-ifx-keyid-9c7df5a91c3d49bbe7378d4aba12ff8e78a2d75c.cer",
+        "microsoft/IntermediateCA/WUS-ifx-keyid-a26ceeac95fa33673219d0c2a77637102fb53ff2.cer",
+        "microsoft/IntermediateCA/WUS-ifx-keyid-ce77153b6e110ca4ae2971a09851ef499326202a.cer",
+        "microsoft/IntermediateCA/WUS-intc-keyid-17a00575d05e58e3881210bb98b1045bb4c30639.cer",
+        "microsoft/IntermediateCA/WUS-ntc-keyid-23f4e22ad3be374a449772954aa283aed752572e.cer",
+        "microsoft/IntermediateCA/WUS-ntc-keyid-882f047b87121cf9885f31160bc7bb5586af471b.cer",
+    ];
+    common_cases(
+        "tests/examples/TrustedTPM/microsoft/IntermediateCA",
+        &known_issues,
+    )
+    .await;
 }
 
 #[tokio::test]
 async fn validate_cas_nationz() {
-    common_cases("tests/examples/TrustedTPM/NationZ/IntermediateCA", &[]).await;
+    let known_issues = [
+        "NationZ/IntermediateCA/NSEccEkCA001.crt",
+        "NationZ/IntermediateCA/NSEccEkCA002.crt",
+        "NationZ/IntermediateCA/NSEccEkCA003.crt",
+        "NationZ/IntermediateCA/NSEccEkCA004.crt",
+        "NationZ/IntermediateCA/NSEccEkCA005.crt",
+        "NationZ/IntermediateCA/NSTPMEccEkCA001.crt",
+        "NationZ/IntermediateCA/NSTPMEccEkCA002.crt",
+        "NationZ/IntermediateCA/NSTPMEccEkCA003.crt",
+        "NationZ/IntermediateCA/NSTPMEccEkCA004.crt",
+        "NationZ/IntermediateCA/NSTPMEccEkCA005.crt",
+    ];
+    common_cases(
+        "tests/examples/TrustedTPM/NationZ/IntermediateCA",
+        &known_issues,
+    )
+    .await;
 }
 
 #[tokio::test]
@@ -503,11 +580,7 @@ async fn validate_cas_nuvoton() {
 #[tokio::test]
 async fn validate_cas_qc() {
     let known_issues = ["QC/IntermediateCA/qwes_prod_ek_provisioning_intermediate.crt"];
-    common_cases(
-        "tests/examples/TrustedTPM/QC/IntermediateCA",
-        &known_issues,
-    )
-    .await;
+    common_cases("tests/examples/TrustedTPM/QC/IntermediateCA", &known_issues).await;
 }
 
 #[tokio::test]
@@ -566,12 +639,10 @@ fn fail_on_new_folders() {
                 if let Some(s) = c.as_os_str().to_str() {
                     if expected_folders.contains(&s) {
                         break;
-                    }
-                    else {
+                    } else {
                         panic!("{s} in an unexpected folder. Please add a unit test to validate CAs in this folder.");
                     }
-                }
-                else {
+                } else {
                     panic!("Failed to convert {c:?} to string");
                 }
             }
@@ -586,12 +657,13 @@ async fn test_cab() {
     let cursor = std::io::Cursor::new(trusted_tpm);
     let cvp = CabVerifyParts::new(cursor).unwrap();
     assert_eq!(
-        "AF88ABB1A066AFB8C936D60DB00E4AD3FE0E5DE33A6DDF3501BD7D7E29FD0657",
+        "193F0F83B5B358A97F893065A98B15C13C5A3056F0DDA1CF3C48812345B80C09",
         buffer_to_hex(&cvp.digest)
     );
     let mut pe = PkiEnvironment::default();
     pe.populate_5280_pki_environment();
-    let cps = CertificationPathSettings::default();
+    let mut cps = CertificationPathSettings::default();
+    cps.set_time_of_interest(1735562393);
     cvp.verify(&mut pe, &cps).await.unwrap();
 }
 

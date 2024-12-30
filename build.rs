@@ -25,8 +25,6 @@ use std::io::BufRead;
 use std::time::Instant;
 use std::{ffi::OsStr, fs, io::Read, path::Path};
 
-use cab;
-
 use rsa::{pkcs8::DecodePublicKey, Pkcs1v15Sign, RsaPublicKey};
 use sha1::Sha1;
 use sha2::{digest::const_oid::db::rfc5912::SHA_1_WITH_RSA_ENCRYPTION, Digest, Sha256};
@@ -52,7 +50,59 @@ pub async fn process_cab(
 ) {
     // mut is used when unverified_amd_roots is not used
     #[allow(unused_mut)]
-    let mut known_building_issues: Vec<&str> = vec![];
+    let mut known_building_issues: Vec<&str> = vec![
+        "Microsoft\\IntermediateCA\\EUS-ifx-keyid-0d9969519b979d32ee4b803165664e9cc86f9d0d.cer",
+        "Microsoft\\IntermediateCA\\EUS-ifx-keyid-18b1af70b93f991972f362556a9a3fbf4bb24e0d.cer",
+        "Microsoft\\IntermediateCA\\EUS-ifx-keyid-2a77a0e342cbc6c72ee3fafc3b0a7bcea7c9ce4e.cer",
+        "Microsoft\\IntermediateCA\\EUS-ifx-keyid-2f572bbadec4d18e0d91ff4375fb468c61b8c7af.cer",
+        "Microsoft\\IntermediateCA\\EUS-ifx-keyid-347c93cabded6168c61fdc8740a7353e46751616.cer",
+        "Microsoft\\IntermediateCA\\EUS-ifx-keyid-37ae346baa54c513cff0290bb321a22a34a4a8c4.cer",
+        "Microsoft\\IntermediateCA\\EUS-ifx-keyid-46f26f96330691e561b72f7a63dce3a0517039fb.cer",
+        "Microsoft\\IntermediateCA\\EUS-ifx-keyid-5d0815951f5f60638a69e7252f3ec4becd7554b2.cer",
+        "Microsoft\\IntermediateCA\\EUS-ifx-keyid-7cb4b78e688614be4421c5858f15b96d5eab51ee.cer",
+        "Microsoft\\IntermediateCA\\EUS-ifx-keyid-8343bac2129d78299c4b513cc3de61037bfcc955.cer",
+        "Microsoft\\IntermediateCA\\EUS-IFX-KEYID-97E5D1CD8B0497C04B4655A869C8F30EFA89388D.CER",
+        "Microsoft\\IntermediateCA\\EUS-ifx-keyid-9c7df5a91c3d49bbe7378d4aba12ff8e78a2d75c.cer",
+        "Microsoft\\IntermediateCA\\EUS-ifx-keyid-a26ceeac95fa33673219d0c2a77637102fb53ff2.cer",
+        "Microsoft\\IntermediateCA\\EUS-ifx-keyid-ce77153b6e110ca4ae2971a09851ef499326202a.cer",
+        "Microsoft\\IntermediateCA\\EUS-intc-keyid-17a00575d05e58e3881210bb98b1045bb4c30639.cer",
+        "Microsoft\\IntermediateCA\\EUS-ntc-keyid-23f4e22ad3be374a449772954aa283aed752572e.cer",
+        "Microsoft\\IntermediateCA\\EUS-ntc-keyid-882f047b87121cf9885f31160bc7bb5586af471b.cer",
+        "Microsoft\\IntermediateCA\\NCU-ifx-keyid-0d9969519b979d32ee4b803165664e9cc86f9d0d.cer",
+        "Microsoft\\IntermediateCA\\NCU-ifx-keyid-18b1af70b93f991972f362556a9a3fbf4bb24e0d.cer",
+        "Microsoft\\IntermediateCA\\NCU-ifx-keyid-2a77a0e342cbc6c72ee3fafc3b0a7bcea7c9ce4e.cer",
+        "Microsoft\\IntermediateCA\\NCU-ifx-keyid-2f572bbadec4d18e0d91ff4375fb468c61b8c7af.cer",
+        "Microsoft\\IntermediateCA\\NCU-ifx-keyid-347c93cabded6168c61fdc8740a7353e46751616.cer",
+        "Microsoft\\IntermediateCA\\NCU-ifx-keyid-37ae346baa54c513cff0290bb321a22a34a4a8c4.cer",
+        "Microsoft\\IntermediateCA\\NCU-ifx-keyid-46f26f96330691e561b72f7a63dce3a0517039fb.cer",
+        "Microsoft\\IntermediateCA\\NCU-ifx-keyid-5d0815951f5f60638a69e7252f3ec4becd7554b2.cer",
+        "Microsoft\\IntermediateCA\\NCU-ifx-keyid-7cb4b78e688614be4421c5858f15b96d5eab51ee.cer",
+        "Microsoft\\IntermediateCA\\NCU-ifx-keyid-8343bac2129d78299c4b513cc3de61037bfcc955.cer",
+        "Microsoft\\IntermediateCA\\NCU-IFX-KEYID-97E5D1CD8B0497C04B4655A869C8F30EFA89388D.CER",
+        "Microsoft\\IntermediateCA\\NCU-ifx-keyid-9c7df5a91c3d49bbe7378d4aba12ff8e78a2d75c.cer",
+        "Microsoft\\IntermediateCA\\NCU-ifx-keyid-a26ceeac95fa33673219d0c2a77637102fb53ff2.cer",
+        "Microsoft\\IntermediateCA\\NCU-ifx-keyid-ce77153b6e110ca4ae2971a09851ef499326202a.cer",
+        "Microsoft\\IntermediateCA\\NCU-intc-keyid-17a00575d05e58e3881210bb98b1045bb4c30639.cer",
+        "Microsoft\\IntermediateCA\\NCU-ntc-keyid-23f4e22ad3be374a449772954aa283aed752572e.cer",
+        "Microsoft\\IntermediateCA\\NCU-ntc-keyid-882f047b87121cf9885f31160bc7bb5586af471b.cer",
+        "Microsoft\\IntermediateCA\\WUS-ifx-keyid-0d9969519b979d32ee4b803165664e9cc86f9d0d.cer",
+        "Microsoft\\IntermediateCA\\WUS-ifx-keyid-18b1af70b93f991972f362556a9a3fbf4bb24e0d.cer",
+        "Microsoft\\IntermediateCA\\WUS-ifx-keyid-2a77a0e342cbc6c72ee3fafc3b0a7bcea7c9ce4e.cer",
+        "Microsoft\\IntermediateCA\\WUS-ifx-keyid-2f572bbadec4d18e0d91ff4375fb468c61b8c7af.cer",
+        "Microsoft\\IntermediateCA\\WUS-ifx-keyid-347c93cabded6168c61fdc8740a7353e46751616.cer",
+        "Microsoft\\IntermediateCA\\WUS-ifx-keyid-37ae346baa54c513cff0290bb321a22a34a4a8c4.cer",
+        "Microsoft\\IntermediateCA\\WUS-ifx-keyid-46f26f96330691e561b72f7a63dce3a0517039fb.cer",
+        "Microsoft\\IntermediateCA\\WUS-ifx-keyid-5d0815951f5f60638a69e7252f3ec4becd7554b2.cer",
+        "Microsoft\\IntermediateCA\\WUS-ifx-keyid-7cb4b78e688614be4421c5858f15b96d5eab51ee.cer",
+        "Microsoft\\IntermediateCA\\WUS-ifx-keyid-8343bac2129d78299c4b513cc3de61037bfcc955.cer",
+        "Microsoft\\IntermediateCA\\WUS-IFX-KEYID-97E5D1CD8B0497C04B4655A869C8F30EFA89388D.CER",
+        "Microsoft\\IntermediateCA\\WUS-ifx-keyid-9c7df5a91c3d49bbe7378d4aba12ff8e78a2d75c.cer",
+        "Microsoft\\IntermediateCA\\WUS-ifx-keyid-a26ceeac95fa33673219d0c2a77637102fb53ff2.cer",
+        "Microsoft\\IntermediateCA\\WUS-ifx-keyid-ce77153b6e110ca4ae2971a09851ef499326202a.cer",
+        "Microsoft\\IntermediateCA\\WUS-intc-keyid-17a00575d05e58e3881210bb98b1045bb4c30639.cer",
+        "Microsoft\\IntermediateCA\\WUS-ntc-keyid-23f4e22ad3be374a449772954aa283aed752572e.cer",
+        "Microsoft\\IntermediateCA\\WUS-ntc-keyid-882f047b87121cf9885f31160bc7bb5586af471b.cer",
+    ];
 
     // mut is used when sha1_certs is not used
     #[allow(unused_mut)]
@@ -63,6 +113,8 @@ pub async fn process_cab(
         "Infineon\\IntermediateCA\\OptigaEccMfrCA053.crt",
         "Infineon\\IntermediateCA\\OptigaEccMfrCA061.crt",
         "Infineon\\IntermediateCA\\OptigaEccMfrCA064.crt",
+        "Infineon\\IntermediateCA\\OptigaEccMfrCA065.crt",
+        "Infineon\\IntermediateCA\\OptigaEccMfrCA067.crt",
         "Nuvoton\\IntermediateCA\\NPCTxxxECC384LeafCA012110.cer",
         "Nuvoton\\IntermediateCA\\NPCTxxxECC384LeafCA012111.cer",
         "Nuvoton\\IntermediateCA\\NPCTxxxECC384LeafCA022110.cer",
@@ -70,6 +122,16 @@ pub async fn process_cab(
         "QC\\IntermediateCA\\qwes_prod_ek_provisioning_intermediate.crt",
         "STMicro\\IntermediateCA\\STSAFE TPM ECC384 Intermediate CA 10.crt",
         "STMicro\\IntermediateCA\\STSAFE TPM ECC384 Intermediate CA 11.crt",
+        "NationZ\\IntermediateCA\\NSEccEkCA001.crt",
+        "NationZ\\IntermediateCA\\NSEccEkCA002.crt",
+        "NationZ\\IntermediateCA\\NSEccEkCA003.crt",
+        "NationZ\\IntermediateCA\\NSEccEkCA004.crt",
+        "NationZ\\IntermediateCA\\NSEccEkCA005.crt",
+        "NationZ\\IntermediateCA\\NSTPMEccEkCA001.crt",
+        "NationZ\\IntermediateCA\\NSTPMEccEkCA002.crt",
+        "NationZ\\IntermediateCA\\NSTPMEccEkCA003.crt",
+        "NationZ\\IntermediateCA\\NSTPMEccEkCA004.crt",
+        "NationZ\\IntermediateCA\\NSTPMEccEkCA005.crt",
     ];
 
     let ta_cbor_hash = match fs::read(ta_cbor) {
@@ -98,9 +160,7 @@ pub async fn process_cab(
     let response = match reqwest::get(source).await {
         Ok(response) => response,
         Err(e) => {
-            println!(
-                "cargo::warning=Failed to download TPM CAB file from {source}. Error: {e:?}"
-            );
+            println!("cargo::warning=Failed to download TPM CAB file from {source}. Error: {e:?}");
             return;
         }
     };
@@ -112,20 +172,18 @@ pub async fn process_cab(
             pe.populate_5280_pki_environment();
             let cps = CertificationPathSettings::default();
             match cvp.verify(&mut pe, &cps).await {
-                Ok(()) => {
-                    match fs::write("TrustedTpm.cab", bytes) {
-                        Ok(_) => {
-                            println!("cargo::warning=A new TPM CAB file was downloaded and verified from {source} and \
+                Ok(()) => match fs::write("TrustedTpm.cab", bytes) {
+                    Ok(_) => {
+                        println!("cargo::warning=A new TPM CAB file was downloaded and verified from {source} and \
                             saved as TrustedTpm.cab for use in this build process");
-                        }
-                        Err(e) => {
-                            println!("cargo::warning=A new TPM CAB file was downloaded and verified from {source}. \
+                    }
+                    Err(e) => {
+                        println!("cargo::warning=A new TPM CAB file was downloaded and verified from {source}. \
                             An attempted was made to save the file as TrustedTpm.cab failed: {e:?}. \
                             Download and verify it per the instructions at the following URL then put the resulting \
                             file at the root of this crate: https://learn.microsoft.com/en-us/windows-server/security/guarded-fabric-shielded-vm/guarded-fabric-install-trusted-tpm-root-certificates");
-                        }
                     }
-                }
+                },
                 Err(e) => {
                     println!("cargo::warning=A new TPM CAB file that could not be verified is available \
                     from {source}. Download and verify it per the instructions at the following URL then \
@@ -185,7 +243,7 @@ pub async fn process_cab(
     let mut ta_files: Vec<String> = vec![];
     let mut ca_files: Vec<String> = vec![];
     let mut skipped_files: Vec<String> = vec![];
-    let target_file_exts = vec!["der", "crt", "cer"];
+    let target_file_exts = ["der", "crt", "cer"];
     let known_skips = [
         "setup.cmd",
         "setup.ps1",
@@ -291,6 +349,10 @@ pub async fn process_cab(
             "AMD\\IntermediateCA\\AMD-fTPM-ECC-ICA-STPFamily-DE88506F89845CC24D912DBA442CADCD.crt",
             "AMD\\IntermediateCA\\AMD-fTPM-ECC-ICA-STXFamily-7C4760BD7AC95E2F5336A9D6028B1E10.crt",
             "AMD\\IntermediateCA\\AMD-fTPM-ECC-ICA-STXHFamily-841ED9E18F875F705AFACAD1CEFAFE37.crt",
+            "AMD\\IntermediateCA\\AMD-fTPM-ECC-ICA-KRKFamily-ACEB8D2B409157C74EB2EE08CED9B645.crt",
+            "AMD\\IntermediateCA\\AMD-fTPM-ECC-ICA-SHPFamily-EB7F6EC0482058DC50691212B414464A.crt",
+            "AMD\\IntermediateCA\\AMD-fTPM-RSA-ICA-KRKFamily-C1C1ED276EC755E277AD88C79AAE8EE7.crt",
+            "AMD\\IntermediateCA\\AMD-fTPM-RSA-ICA-SHPFamily-56994D25E17B5ED968FDD36ABD64804E.crt",
             "AMD\\IntermediateCA\\AMD-fTPM-ECC-RNFamily.crt",
             "AMD\\IntermediateCA\\AMD-fTPM-ECC-RVFamily.crt",
             "AMD\\IntermediateCA\\AMD-fTPM-ECC-SSPFamily.crt",
@@ -538,11 +600,9 @@ pub async fn process_cab(
 
 fn decode_broken_pem(bad_pem: &[u8]) -> certval::Result<Vec<u8>> {
     let mut b64 = String::with_capacity(bad_pem.len());
-    for line in bad_pem.lines() {
-        if let Ok(line) = line {
-            if line.chars().nth(0).unwrap_or_default() != '-' {
-                b64 += line.trim();
-            }
+    for line in bad_pem.lines().map_while(Result::ok) {
+        if line.chars().next().unwrap_or_default() != '-' {
+            b64 += line.trim();
         }
     }
 
