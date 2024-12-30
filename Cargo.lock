@@ -2358,12 +2358,11 @@ dependencies = [
 
 [[package]]
 name = "tpm_roots"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "base64ct",
  "cab",
  "certval",
- "lazy_static",
  "log",
  "log4rs",
  "pem-rfc7468",
