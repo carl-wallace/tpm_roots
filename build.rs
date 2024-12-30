@@ -48,6 +48,7 @@ pub async fn process_cab(
     invalid_ca_cbor: &str,
     all_ca_cbor: &str,
 ) {
+    // when contents of this vector change, update the same in fail_on_missing_known_issues test
     // mut is used when unverified_amd_roots is not used
     #[allow(unused_mut)]
     let mut known_building_issues: Vec<&str> = vec![
@@ -104,6 +105,7 @@ pub async fn process_cab(
         "Microsoft\\IntermediateCA\\WUS-ntc-keyid-882f047b87121cf9885f31160bc7bb5586af471b.cer",
     ];
 
+    // when contents of this vector change, update the same in fail_on_missing_known_issues test
     // mut is used when sha1_certs is not used
     #[allow(unused_mut)]
     let mut known_validation_issues = vec![
@@ -335,6 +337,7 @@ pub async fn process_cab(
     }
     #[cfg(not(feature = "unverified_amd_roots"))]
     {
+        // when contents of this vector change, update the same in fail_on_missing_known_issues test
         let mut amd_building_issues = vec![
             "AMD\\IntermediateCA\\AMD-fTPM-ECC-ICA-AERFamily-6A668AE95CA8508559C3E1D872F2417D.crt",
             "AMD\\IntermediateCA\\AMD-fTPM-ECC-ICA-CRDFamily-5B401A1127EA54E3685B06D275FE8399.crt",
@@ -453,6 +456,7 @@ pub async fn process_cab(
     }
     #[cfg(not(feature = "sha1_certs"))]
     {
+        // when contents of this vector change, update the same in fail_on_missing_known_issues test
         let mut infineon_validation_issues = vec![
             "Infineon\\IntermediateCA\\IFX_TPM_EK_Intermediate_CA_01.crt",
             "Infineon\\IntermediateCA\\IFX_TPM_EK_Intermediate_CA_02.crt",
