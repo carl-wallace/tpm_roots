@@ -23,15 +23,15 @@ from an http URI indicated in an authorityInfoAccess extension.
 
 ## Known issues
 
-Using a CAB file from June 14, 2024, the following errors were observed when attempting to verify intermediate CA
+Using a CAB file from December 24, 2024, the following errors were observed when attempting to verify intermediate CA
 certificates during building. Some can be addressed using features. Others will remain unaddressed until the `certval`
 crate is updated to address the issue.
 
 ### AMD
 
-The CAB file contains thirty-two AMD intermediate CA certificates for which no certification paths can be built using the
+The CAB file contains thirty-six AMD intermediate CA certificates for which no certification paths can be built using the
 contents of the CAB file. While the certificates feature an AIA extension, the certificate retrieved from the referenced
-URLs are self-signed and cannot be used to build and verify a certification path. Were the certificates available via a 
+URLs are self-signed and cannot be used to build and verify a certification path. Were the certificates available via a
 trustworthy mechanism, the paths would all validate.
 
 ```text
@@ -67,6 +67,10 @@ warning: tpm_roots@0.1.0: failed to find any certification paths for certificate
 warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from AMD\IntermediateCA\AMD-fTPM-RSA-RNFamily.crt. Ignoring and continuing.
 warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from AMD\IntermediateCA\AMD-fTPM-RSA-RVFamily.crt. Ignoring and continuing.
 warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from AMD\IntermediateCA\AMD-fTPM-RSA-SSPFamily.crt. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from AMD\IntermediateCA\AMD-fTPM-ECC-ICA-KRKFamily-ACEB8D2B409157C74EB2EE08CED9B645.crt. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from AMD\IntermediateCA\AMD-fTPM-ECC-ICA-SHPFamily-EB7F6EC0482058DC50691212B414464A.crt. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from AMD\IntermediateCA\AMD-fTPM-RSA-ICA-KRKFamily-C1C1ED276EC755E277AD88C79AAE8EE7.crt. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from AMD\IntermediateCA\AMD-fTPM-RSA-ICA-SHPFamily-56994D25E17B5ED968FDD36ABD64804E.crt. Ignoring and continuing.
 ```
 
 ### Infineon
@@ -121,44 +125,83 @@ warning: tpm_roots@0.1.0: failed to validate certificate from Infineon\Intermedi
 warning: tpm_roots@0.1.0: failed to validate certificate from Infineon\IntermediateCA\OptigaEccMfrCA053.crt. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
 warning: tpm_roots@0.1.0: failed to validate certificate from Infineon\IntermediateCA\OptigaEccMfrCA061.crt. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
 warning: tpm_roots@0.1.0: failed to validate certificate from Infineon\IntermediateCA\OptigaEccMfrCA064.crt. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
+warning: tpm_roots@0.1.0: failed to validate certificate from Infineon\IntermediateCA\OptigaEccMfrCA065.crt. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
+warning: tpm_roots@0.1.0: failed to validate certificate from Infineon\IntermediateCA\OptigaEccMfrCA067.crt. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
 ```
 
-### Nuvoton
+### Microsoft
 
-Several Nuvoton certificates are signed by the NPCTxxx ECC521 RootCA and p521 is not currently supported in the `certval` crate.
+The CAB file features fifty-one Microsoft certificates for which no valid certification paths can be built using the contents of the CAB file.
+These certificates were all expired by the date the CAB file was obtained.
 
 ```text
-warning: tpm_roots@0.1.0: failed to validate certificate from Nuvoton\IntermediateCA\NPCTxxxECC384LeafCA012110.cer. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
-warning: tpm_roots@0.1.0: failed to validate certificate from Nuvoton\IntermediateCA\NPCTxxxECC384LeafCA012111.cer. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
-warning: tpm_roots@0.1.0: failed to validate certificate from Nuvoton\IntermediateCA\NPCTxxxECC384LeafCA022110.cer. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
-warning: tpm_roots@0.1.0: failed to validate certificate from Nuvoton\IntermediateCA\NPCTxxxECC384LeafCA022111.cer. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\EUS-ifx-keyid-0d9969519b979d32ee4b803165664e9cc86f9d0d.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\EUS-ifx-keyid-18b1af70b93f991972f362556a9a3fbf4bb24e0d.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\EUS-ifx-keyid-2a77a0e342cbc6c72ee3fafc3b0a7bcea7c9ce4e.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\EUS-ifx-keyid-2f572bbadec4d18e0d91ff4375fb468c61b8c7af.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\EUS-ifx-keyid-347c93cabded6168c61fdc8740a7353e46751616.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\EUS-ifx-keyid-37ae346baa54c513cff0290bb321a22a34a4a8c4.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\EUS-ifx-keyid-46f26f96330691e561b72f7a63dce3a0517039fb.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\EUS-ifx-keyid-5d0815951f5f60638a69e7252f3ec4becd7554b2.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\EUS-ifx-keyid-7cb4b78e688614be4421c5858f15b96d5eab51ee.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\EUS-ifx-keyid-8343bac2129d78299c4b513cc3de61037bfcc955.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\EUS-IFX-KEYID-97E5D1CD8B0497C04B4655A869C8F30EFA89388D.CER. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\EUS-ifx-keyid-9c7df5a91c3d49bbe7378d4aba12ff8e78a2d75c.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\EUS-ifx-keyid-a26ceeac95fa33673219d0c2a77637102fb53ff2.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\EUS-ifx-keyid-ce77153b6e110ca4ae2971a09851ef499326202a.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\EUS-intc-keyid-17a00575d05e58e3881210bb98b1045bb4c30639.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\EUS-ntc-keyid-23f4e22ad3be374a449772954aa283aed752572e.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\EUS-ntc-keyid-882f047b87121cf9885f31160bc7bb5586af471b.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\NCU-ifx-keyid-0d9969519b979d32ee4b803165664e9cc86f9d0d.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\NCU-ifx-keyid-18b1af70b93f991972f362556a9a3fbf4bb24e0d.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\NCU-ifx-keyid-2a77a0e342cbc6c72ee3fafc3b0a7bcea7c9ce4e.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\NCU-ifx-keyid-2f572bbadec4d18e0d91ff4375fb468c61b8c7af.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\NCU-ifx-keyid-347c93cabded6168c61fdc8740a7353e46751616.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\NCU-ifx-keyid-37ae346baa54c513cff0290bb321a22a34a4a8c4.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\NCU-ifx-keyid-46f26f96330691e561b72f7a63dce3a0517039fb.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\NCU-ifx-keyid-5d0815951f5f60638a69e7252f3ec4becd7554b2.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\NCU-ifx-keyid-7cb4b78e688614be4421c5858f15b96d5eab51ee.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\NCU-ifx-keyid-8343bac2129d78299c4b513cc3de61037bfcc955.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\NCU-IFX-KEYID-97E5D1CD8B0497C04B4655A869C8F30EFA89388D.CER. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\NCU-ifx-keyid-9c7df5a91c3d49bbe7378d4aba12ff8e78a2d75c.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\NCU-ifx-keyid-a26ceeac95fa33673219d0c2a77637102fb53ff2.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\NCU-ifx-keyid-ce77153b6e110ca4ae2971a09851ef499326202a.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\NCU-intc-keyid-17a00575d05e58e3881210bb98b1045bb4c30639.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\NCU-ntc-keyid-23f4e22ad3be374a449772954aa283aed752572e.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\NCU-ntc-keyid-882f047b87121cf9885f31160bc7bb5586af471b.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\WUS-ifx-keyid-0d9969519b979d32ee4b803165664e9cc86f9d0d.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\WUS-ifx-keyid-18b1af70b93f991972f362556a9a3fbf4bb24e0d.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\WUS-ifx-keyid-2a77a0e342cbc6c72ee3fafc3b0a7bcea7c9ce4e.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\WUS-ifx-keyid-2f572bbadec4d18e0d91ff4375fb468c61b8c7af.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\WUS-ifx-keyid-347c93cabded6168c61fdc8740a7353e46751616.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\WUS-ifx-keyid-37ae346baa54c513cff0290bb321a22a34a4a8c4.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\WUS-ifx-keyid-46f26f96330691e561b72f7a63dce3a0517039fb.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\WUS-ifx-keyid-5d0815951f5f60638a69e7252f3ec4becd7554b2.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\WUS-ifx-keyid-7cb4b78e688614be4421c5858f15b96d5eab51ee.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\WUS-ifx-keyid-8343bac2129d78299c4b513cc3de61037bfcc955.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\WUS-IFX-KEYID-97E5D1CD8B0497C04B4655A869C8F30EFA89388D.CER. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\WUS-ifx-keyid-9c7df5a91c3d49bbe7378d4aba12ff8e78a2d75c.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\WUS-ifx-keyid-a26ceeac95fa33673219d0c2a77637102fb53ff2.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\WUS-ifx-keyid-ce77153b6e110ca4ae2971a09851ef499326202a.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\WUS-intc-keyid-17a00575d05e58e3881210bb98b1045bb4c30639.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\WUS-ntc-keyid-23f4e22ad3be374a449772954aa283aed752572e.cer. Ignoring and continuing.
+warning: tpm_roots@0.1.0: failed to find any certification paths for certificate from Microsoft\IntermediateCA\WUS-ntc-keyid-882f047b87121cf9885f31160bc7bb5586af471b.cer. Ignoring and continuing.
 ```
 
-### QC
+### Nation Z
 
-One certificate from QC failed to validate due to use of the ecdsa-with-SHA512 algorithm, which is not currently supported in the `certval` crate.
+The CAB file features ten Nation Z certificates for which no valid certification paths can be built using the contents of the CAB file.
+All were due to use of the ecdsa-with-SHA512 algorithm, which is not currently supported in the `certval` crate.
 
 ```text
-warning: tpm_roots@0.1.0: failed to validate certificate from QC\IntermediateCA\qwes_prod_ek_provisioning_intermediate.crt. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
-```
-
-### STMicro
-
-Seven STMicro certificates failed to validate. Two were due to use of the ecdsa-with-SHA512 algorithm, which is not currently supported in the `certval` crate.
-
-```text 
-warning: tpm_roots@0.1.0: failed to validate certificate from STMicro\IntermediateCA\STSAFE TPM ECC384 Intermediate CA 10.crt. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
-warning: tpm_roots@0.1.0: failed to validate certificate from STMicro\IntermediateCA\STSAFE TPM ECC384 Intermediate CA 11.crt. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
-```
-
-Several others were due to mis-encoded serial number values. This will be addressed in a future version of `certval` that
-can use the `Raw` profile with trust anchors (support is present in pre-release crates today(.
-
-```text 
-STMicro/IntermediateCA/STM TPM ECC Intermediate CA 01.crt: NotAttempted
-STMicro/IntermediateCA/STM TPM EK Intermediate CA 01.crt: NotAttempted
-STMicro/IntermediateCA/STM TPM EK Intermediate CA 02.crt: NotAttempted
-STMicro/IntermediateCA/STM TPM EK Intermediate CA 03.crt: NotAttempted
-STMicro/IntermediateCA/STM TPM EK Intermediate CA 04.crt: NotAttempted
-STMicro/IntermediateCA/STM TPM EK Intermediate CA 05.crt: NotAttempted
+warning: tpm_roots@0.1.0: failed to validate certificate from NationZ\IntermediateCA\NSEccEkCA001.crt. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
+warning: tpm_roots@0.1.0: failed to validate certificate from NationZ\IntermediateCA\NSEccEkCA002.crt. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
+warning: tpm_roots@0.1.0: failed to validate certificate from NationZ\IntermediateCA\NSEccEkCA003.crt. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
+warning: tpm_roots@0.1.0: failed to validate certificate from NationZ\IntermediateCA\NSEccEkCA004.crt. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
+warning: tpm_roots@0.1.0: failed to validate certificate from NationZ\IntermediateCA\NSEccEkCA005.crt. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
+warning: tpm_roots@0.1.0: failed to validate certificate from NationZ\IntermediateCA\NSTPMEccEkCA001.crt. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
+warning: tpm_roots@0.1.0: failed to validate certificate from NationZ\IntermediateCA\NSTPMEccEkCA002.crt. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
+warning: tpm_roots@0.1.0: failed to validate certificate from NationZ\IntermediateCA\NSTPMEccEkCA003.crt. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
+warning: tpm_roots@0.1.0: failed to validate certificate from NationZ\IntermediateCA\NSTPMEccEkCA004.crt. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
+warning: tpm_roots@0.1.0: failed to validate certificate from NationZ\IntermediateCA\NSTPMEccEkCA005.crt. Ignoring and continuing. Error: [PathValidation(SignatureVerificationFailure)]
 ```
