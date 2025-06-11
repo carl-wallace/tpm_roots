@@ -5,42 +5,42 @@ edition = "2021"
 rust-version = "1.80.1"
 
 [dependencies]
-base64ct = { version="1.6.0", features = ["alloc"] }
+base64ct = { version="1.8.0", features = ["alloc"] }
 certval = { git = "https://github.com/carl-wallace/rust-pki.git", features = ["std"]}
-log = "0.4.22"
+log = "0.4.27"
 x509-cert = "0.2.5"
 
 cab = "0.6.0"
 pem-rfc7468 = { version="0.7.0", features = ["alloc"]}
-reqwest = "0.12.9"
+reqwest = "0.12.20"
 sha2 = "0.10.8"
-tokio = { version = "1.42.0", features = ["full", "time", "rt-multi-thread"]}
+tokio = { version = "1.45.1", features = ["full", "time", "rt-multi-thread"]}
 
 [dev-dependencies]
-base64ct = { version="1.6.0", features = ["alloc"] }
+base64ct = { version="1.8.0", features = ["alloc"] }
 cab = "0.6.0"
 certval = { git = "https://github.com/carl-wallace/rust-pki.git", features = ["std"]}
 pem-rfc7468 = { version="0.7.0", features = ["alloc"]}
-reqwest = "0.12.5"
+reqwest = "0.12.20"
 rsa = "0.9.6"
 sha1 = "0.10.6"
 sha2 = "0.10.8"
-tokio = { version = "1.42.0", features = ["full", "time", "rt-multi-thread"]}
+tokio = { version = "1.45.1", features = ["full", "time", "rt-multi-thread"]}
 x509-cert = { version = "0.2.5", features = ["hazmat"] }
 walkdir = "2.5.0"
 tpm_cab_verify = {git = "https://github.com/carl-wallace/tpm_cab_verify.git"}
 log4rs = "1.3.0"
 
 [build-dependencies]
-base64ct = { version="1.6.0", features = ["alloc"] }
+base64ct = { version="1.8.0", features = ["alloc"] }
 cab = "0.6.0"
 certval = { git = "https://github.com/carl-wallace/rust-pki.git", features = ["std"]}
 pem-rfc7468 = { version="0.7.0", features = ["alloc"]}
-reqwest = "0.12.9"
+reqwest = "0.12.20"
 rsa = { version = "0.9.6", features = ["pkcs5"] }
 sha1 = { version = "0.10.6", features = ["oid"] }
 sha2 = "0.10.8"
-tokio = { version = "1.42.0", features = ["full", "time", "rt-multi-thread"]}
+tokio = { version = "1.45.1", features = ["full", "time", "rt-multi-thread"]}
 x509-cert = "0.2.5"
 tpm_cab_verify = {git = "https://github.com/carl-wallace/tpm_cab_verify.git"}
 
