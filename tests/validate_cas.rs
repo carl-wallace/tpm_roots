@@ -1,6 +1,7 @@
 //! Test cases to generate a report detailing CA validation
 //!
 use certval::PathValidationStatus;
+use certval::TimeOfInterest;
 use log::error;
 use rsa::Pkcs1v15Sign;
 use rsa::RsaPublicKey;
@@ -871,7 +872,7 @@ async fn test_cab() {
     let mut pe = PkiEnvironment::default();
     pe.populate_5280_pki_environment();
     let mut cps = CertificationPathSettings::default();
-    cps.set_time_of_interest(1735562393);
+    cps.set_time_of_interest(TimeOfInterest::from_unix_secs(1735562393).unwrap());
     cvp.verify(&mut pe, &cps).await.unwrap();
 }
 
