@@ -77,15 +77,13 @@ x509-cert  = { git = "https://github.com/RustCrypto/formats.git" }
 x509-ocsp  = { git = "https://github.com/RustCrypto/formats.git" }
 x509-tsp   = { git = "https://github.com/RustCrypto/formats.git" }
 
-sha1         = { git = "https://github.com/RustCrypto/hashes.git" }
-sha2         = { git = "https://github.com/RustCrypto/hashes.git" }
+sha1       = { git = "https://github.com/RustCrypto/hashes.git" }
+sha2       = { git = "https://github.com/RustCrypto/hashes.git" }
 
-rsa              = { git = "https://github.com/RustCrypto/RSA.git" }
-crypto-bigint = { git = "https://github.com/RustCrypto/crypto-bigint.git" }
+rsa            = { git = "https://github.com/RustCrypto/RSA.git" }
+crypto-bigint  = { git = "https://github.com/RustCrypto/crypto-bigint.git" }
 elliptic-curve = { git = "https://github.com/RustCrypto/traits.git" }
-ecdsa         = { git = "https://github.com/RustCrypto/signatures.git"}
+ecdsa          = { git = "https://github.com/RustCrypto/signatures.git"}
 
 # Miscellaneous repos
-authenticode = {git = "https://github.com/carl-wallace/authenticode-rs.git", branch = "updates"}
-curve25519-dalek = { git = "https://github.com/baloo/curve25519-dalek.git", branch = "baloo/rand-0.9" }
-ed25519-dalek    = { git = "https://github.com/baloo/curve25519-dalek.git", branch = "baloo/rand-0.9" }
+authenticode   = {git = "https://github.com/carl-wallace/authenticode-rs.git", branch = "updates"}
