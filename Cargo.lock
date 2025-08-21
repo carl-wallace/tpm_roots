@@ -266,49 +266,7 @@ dependencies = [
  "p384",
  "p521",
  "pem-rfc7468",
- "pkiprocmacros 0.1.2 (git+https://github.com/carl-wallace/rust-pki.git?branch=cert_limbo)",
- "readonly",
- "regex",
- "reqwest",
- "rsa",
- "serde",
- "serde_json",
- "sha1",
- "sha2",
- "signature",
- "spki",
- "subtle-encoding",
- "url",
- "walkdir",
- "webpki-roots",
- "x509-cert",
- "x509-ocsp",
-]
-
-[[package]]
-name = "certval"
-version = "0.1.4"
-source = "git+https://github.com/carl-wallace/rust-pki.git?branch=depend_update#69f18ff6a9a60617d28a081066439d643bd6c9d4"
-dependencies = [
- "base64ct",
- "bitvec",
- "cfg-if",
- "ciborium",
- "cidr",
- "cms",
- "const-oid",
- "der",
- "ecdsa",
- "flagset",
- "hex-literal",
- "lazy_static",
- "log",
- "ndarray",
- "p256",
- "p384",
- "p521",
- "pem-rfc7468",
- "pkiprocmacros 0.1.2 (git+https://github.com/carl-wallace/rust-pki.git?branch=depend_update)",
+ "pkiprocmacros",
  "readonly",
  "regex",
  "reqwest",
@@ -1608,15 +1566,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pkiprocmacros"
-version = "0.1.2"
-source = "git+https://github.com/carl-wallace/rust-pki.git?branch=depend_update#69f18ff6a9a60617d28a081066439d643bd6c9d4"
-dependencies = [
- "quote",
- "syn 2.0.106",
-]
-
-[[package]]
 name = "polyval"
 version = "0.7.0-rc.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2495,7 +2444,7 @@ source = "git+https://github.com/carl-wallace/tpm_cab_verify.git?branch=updates#
 dependencies = [
  "authenticode",
  "bincode",
- "certval 0.1.4 (git+https://github.com/carl-wallace/rust-pki.git?branch=cert_limbo)",
+ "certval",
  "cms",
  "const-oid",
  "der",
@@ -2513,7 +2462,7 @@ version = "0.1.1"
 dependencies = [
  "base64ct",
  "cab",
- "certval 0.1.4 (git+https://github.com/carl-wallace/rust-pki.git?branch=depend_update)",
+ "certval",
  "der",
  "log",
  "log4rs",
