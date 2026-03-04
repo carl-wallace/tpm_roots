@@ -150,10 +150,24 @@ pub async fn process_cab(
             vec![]
         }
     };
+    let invalid_ca_cbor_hash = match fs::read(invalid_ca_cbor) {
+        Ok(ca_cbor) => Sha256::digest(ca_cbor).as_slice().to_vec(),
+        Err(e) => {
+            println!("cargo::warning=Failed to read previous invalid CA CBOR from {invalid_ca_cbor}. Ignoring and continuing. Error: {e:?}");
+            vec![]
+        }
+    };
+    let all_ca_cbor_hash = match fs::read(all_ca_cbor) {
+        Ok(ca_cbor) => Sha256::digest(ca_cbor).as_slice().to_vec(),
+        Err(e) => {
+            println!("cargo::warning=Failed to read previous all CA CBOR from {all_ca_cbor}. Ignoring and continuing. Error: {e:?}");
+            vec![]
+        }
+    };
     let cab_hash = match fs::read(file_name) {
         Ok(cab_buf) => Sha256::digest(cab_buf).as_slice().to_vec(),
         Err(e) => {
-            println!("cargo::warning=Failed to read previous CA CBOR from {file_name}. Ignoring and continuing. Error: {e:?}");
+            println!("cargo::warning=Failed to read previous CAB file from {file_name}. Ignoring and continuing. Error: {e:?}");
             vec![]
         }
     };
@@ -166,35 +180,46 @@ pub async fn process_cab(
             return;
         }
     };
-    if let Ok(bytes) = response.bytes().await {
-        if cab_hash != Sha256::digest(bytes.clone()).to_vec() {
-            let cursor = std::io::Cursor::new(bytes.to_vec());
-            let cvp = CabVerifyParts::new(cursor).unwrap();
-            let mut pe = PkiEnvironment::default();
-            pe.populate_5280_pki_environment();
-            let cps = CertificationPathSettings::default();
-            match cvp.verify(&mut pe, &cps).await {
-                Ok(()) => match fs::write("TrustedTpm.cab", bytes) {
-                    Ok(_) => {
-                        println!("cargo::warning=A new TPM CAB file was downloaded and verified from {source} and \
-                            saved as TrustedTpm.cab for use in this build process");
-                    }
+    match response.bytes().await {
+        Ok(bytes) => {
+            if cab_hash != Sha256::digest(bytes.clone()).to_vec() {
+                let cursor = std::io::Cursor::new(bytes.to_vec());
+                let cvp = match CabVerifyParts::new(cursor) {
+                    Ok(cvp) => cvp,
                     Err(e) => {
-                        println!("cargo::warning=A new TPM CAB file was downloaded and verified from {source}. \
+                        println ! ("cargo::warning=Failed to parse CAB verification parts for TPM CAB file downloaded from {source}: {e:?}");
+                        return;
+                    }
+                };
+                let mut pe = PkiEnvironment::default();
+                pe.populate_5280_pki_environment();
+                let cps = CertificationPathSettings::default();
+                match cvp.verify(&mut pe, &cps).await {
+                    Ok(()) => match fs::write("TrustedTpm.cab", bytes) {
+                        Ok(_) => {
+                            println ! ("cargo::warning=A new TPM CAB file was downloaded and verified from {source} and \
+                            saved as TrustedTpm.cab for use in this build process");
+                        }
+                        Err(e) => {
+                            println ! ("cargo::warning=A new TPM CAB file was downloaded and verified from {source}. \
                             An attempted was made to save the file as TrustedTpm.cab failed: {e:?}. \
                             Download and verify it per the instructions at the following URL then put the resulting \
                             file at the root of this crate: https://learn.microsoft.com/en-us/windows-server/security/guarded-fabric-shielded-vm/guarded-fabric-install-trusted-tpm-root-certificates");
-                    }
-                },
-                Err(e) => {
-                    println!("cargo::warning=A new TPM CAB file that could not be verified is available \
+                        }
+                    },
+                    Err(e) => {
+                        println ! ("cargo::warning=A new TPM CAB file that could not be verified is available \
                     from {source}. Download and verify it per the instructions at the following URL then \
                     put the resulting file at the root of this crate: https://learn.microsoft.com/en-us/windows-server/security/guarded-fabric-shielded-vm/guarded-fabric-install-trusted-tpm-root-certificates. \
                     Error: {e:?}");
+                    }
                 }
+            } else {
+                println!("cargo::warning=No updated TPM CAB file is available from {source}");
             }
-        } else {
-            println!("cargo::warning=No updated TPM CAB file is available from {source}");
+        }
+        Err(e) => {
+            println!("cargo::warning=Failed to read response bytes from {source}: {e}");
         }
     }
 
@@ -286,8 +311,8 @@ pub async fn process_cab(
         let mut buf = vec![];
         match reader.read_to_end(&mut buf) {
             Ok(_) => {
-                println!("Reading {ta}");
-                let cf = if buf[0] != 0x30 {
+                println!("cargo::warning=Reading {ta}");
+                let cf = if buf.first() != Some(&0x30) {
                     match pem_rfc7468::decode_vec(&buf) {
                         Ok(b) => CertFile {
                             filename: ta,
@@ -409,8 +434,8 @@ pub async fn process_cab(
         let mut buf = vec![];
         match reader.read_to_end(&mut buf) {
             Ok(_) => {
-                println!("Reading {ca}");
-                let cf = if buf[0] != 0x30 {
+                println!("cargo::warning=Reading {ca}");
+                let cf = if buf.first() != Some(&0x30) {
                     match pem_rfc7468::decode_vec(&buf) {
                         Ok(b) => CertFile {
                             filename: ca,
@@ -508,7 +533,7 @@ pub async fn process_cab(
     cert_source.find_all_partial_paths(&pe, &cps);
     match cert_source.serialize(CertificationPathBuilderFormats::Cbor) {
         Ok(graph) => {
-            if ca_cbor_hash != Sha256::digest(&graph).as_slice().to_vec() {
+            if all_ca_cbor_hash != Sha256::digest(&graph).as_slice().to_vec() {
                 fs::write(all_ca_cbor, graph.as_slice())
                     .expect("Unable to write generated CBOR file with CAs and partial paths");
             }
@@ -525,20 +550,22 @@ pub async fn process_cab(
     let mut cert_source_invalid = CertSource::new();
 
     // verify each CA cert, saving those that verify and discarding those that do not
-    for cf in ca_certs {
+    for (ii, cf) in ca_certs.iter().enumerate() {
         let mut valid = false;
         let mut errors = vec![];
         let mut paths: Vec<CertificationPath> = vec![];
-        if let Ok(cert) = PDVCertificate::try_from(cf.bytes.as_slice()) {
-            if pe
-                .get_paths_for_target(&cert, &mut paths, 0, cps.get_time_of_interest())
-                .is_ok()
-            {
-                if paths.is_empty() {
+        match PDVCertificate::try_from(cf.bytes.as_slice()) {
+            Ok(cert) => {
+                if let Err(e) =
+                    pe.get_paths_for_target(&cert, &mut paths, 0, cps.get_time_of_interest())
+                {
+                    println!("cargo::warning=encountered error while searching for certification paths for certificate[{ii}] from {}: {e}. Ignoring and continuing.", cf.filename);
+                    cert_source_invalid.push(cf.clone());
+                } else if paths.is_empty() {
                     if !known_building_issues.contains(&cf.filename.as_str()) {
-                        println!("cargo::warning=failed to find any certification paths for certificate from {}. Ignoring and continuing.", cf.filename);
+                        println!("cargo::warning=failed to find any certification paths for certificate[{ii}] from {}. Ignoring and continuing.", cf.filename);
                     }
-                    cert_source_invalid.push(cf);
+                    cert_source_invalid.push(cf.clone());
                     continue;
                 } else {
                     for path in paths.iter_mut() {
@@ -553,13 +580,19 @@ pub async fn process_cab(
                             }
                         }
                     }
+                    // if a certificate failed to validate and the failure is not known, log it and
+                    // save to a list of invalid certs. if validation succeeded or the failure is
+                    // known to be something that must be tolerated, add it to the list of valid certs.
                     if !valid && !known_validation_issues.contains(&cf.filename.as_str()) {
-                        println!("cargo::warning=failed to validate certificate from {}. Ignoring and continuing. Error: {:?}", cf.filename, errors);
-                        cert_source_invalid.push(cf);
+                        println!("cargo::warning=failed to validate certificate[{ii}] from {}. Ignoring and continuing. Error: {:?}", cf.filename, errors);
+                        cert_source_invalid.push(cf.clone());
                     } else {
-                        cert_source_valid.push(cf);
+                        cert_source_valid.push(cf.clone());
                     }
                 }
+            }
+            Err(e) => {
+                println!("cargo::warning=failed to parse certificate[{ii}] from {}. Ignoring and continuing. Error: {:?}", cf.filename, e);
             }
         };
     }
@@ -585,7 +618,7 @@ pub async fn process_cab(
 
     match cert_source_invalid.serialize(CertificationPathBuilderFormats::Cbor) {
         Ok(graph) => {
-            if ca_cbor_hash != Sha256::digest(&graph).as_slice().to_vec() {
+            if invalid_ca_cbor_hash != Sha256::digest(&graph).as_slice().to_vec() {
                 fs::write(invalid_ca_cbor, graph.as_slice())
                     .expect("Unable to write generated CBOR file with CAs and partial paths");
             }

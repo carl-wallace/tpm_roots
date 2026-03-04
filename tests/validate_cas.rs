@@ -29,7 +29,7 @@ fn decode_broken_pem(bad_pem: &[u8]) -> certval::Result<Vec<u8>> {
     let mut b64 = String::with_capacity(bad_pem.len());
     for line in bad_pem.lines() {
         if let Ok(line) = line {
-            if line.chars().nth(0).unwrap_or_default() != '-' {
+            if line.chars().next().unwrap_or_default() != '-' {
                 b64 += line.trim();
             }
         }
@@ -44,7 +44,7 @@ fn decode_broken_pem(bad_pem: &[u8]) -> certval::Result<Vec<u8>> {
 /// Parse a cert whether its PEM (broken or standards-compliant) or DER
 #[cfg(test)]
 fn parse_cert(buf: &[u8]) -> certval::Result<PDVCertificate> {
-    let buf = if buf[0] != 0x30 {
+    let buf = if buf.first() != Some(&0x30) {
         match pem_rfc7468::decode_vec(&buf) {
             Ok(b) => b.1,
             Err(_e) => {
