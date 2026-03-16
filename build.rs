@@ -94,13 +94,6 @@ pub async fn process_cab(
     invalid_ca_cbor: &str,
     all_ca_cbor: &str,
 ) {
-    use std::
-    {
-        thread,
-        time::Duration
-    };
-    thread::sleep(Duration::from_secs(5));
-
     // Check if inputs and outputs are unchanged since last successful run
     let current = BuildManifest::from_files(file_name, ta_cbor, valid_ca_cbor, invalid_ca_cbor, all_ca_cbor);
     if let Some(saved) = BuildManifest::read(BUILD_MANIFEST) {
