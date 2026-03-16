@@ -4,6 +4,7 @@ async fn main() {
     println!("cargo::rerun-if-changed=TrustedTpm.cab");
     println!("cargo::rerun-if-changed=ta.cbor");
     println!("cargo::rerun-if-changed=ca.cbor");
+    println!("cargo::rerun-if-changed=build_manifest.json");
     println!("cargo::warning=Processing TrustedTpm.cab");
     let timer = Instant::now();
     process_cab(
@@ -21,6 +22,7 @@ async fn main() {
 }
 
 use base64ct::{Base64, Encoding};
+use serde::{Deserialize, Serialize};
 use std::io::BufRead;
 use std::time::Instant;
 use std::{ffi::OsStr, fs, io::Read, path::Path};
@@ -41,6 +43,50 @@ use certval::{
 };
 use tpm_cab_verify::CabVerifyParts;
 
+const BUILD_MANIFEST: &str = "build_manifest.json";
+
+#[derive(Serialize, Deserialize, PartialEq)]
+struct BuildManifest {
+    cab: String,
+    ta_cbor: String,
+    valid_ca_cbor: String,
+    invalid_ca_cbor: String,
+    all_ca_cbor: String,
+}
+
+fn hash_file(path: &str) -> String {
+    match fs::read(path) {
+        Ok(data) => {
+            let digest = Sha256::digest(&data);
+            digest.iter().map(|b| format!("{:02x}", b)).collect()
+        }
+        Err(_) => String::new(),
+    }
+}
+
+impl BuildManifest {
+    fn from_files(cab: &str, ta: &str, valid_ca: &str, invalid_ca: &str, all_ca: &str) -> Self {
+        BuildManifest {
+            cab: hash_file(cab),
+            ta_cbor: hash_file(ta),
+            valid_ca_cbor: hash_file(valid_ca),
+            invalid_ca_cbor: hash_file(invalid_ca),
+            all_ca_cbor: hash_file(all_ca),
+        }
+    }
+
+    fn read(path: &str) -> Option<Self> {
+        let data = fs::read_to_string(path).ok()?;
+        serde_json::from_str(&data).ok()
+    }
+
+    fn write(&self, path: &str) {
+        if let Ok(json) = serde_json::to_string_pretty(self) {
+            let _ = fs::write(path, json);
+        }
+    }
+}
+
 pub async fn process_cab(
     file_name: &str,
     ta_cbor: &str,
@@ -48,6 +94,22 @@ pub async fn process_cab(
     invalid_ca_cbor: &str,
     all_ca_cbor: &str,
 ) {
+    use std::
+    {
+        thread,
+        time::Duration
+    };
+    thread::sleep(Duration::from_secs(5));
+
+    // Check if inputs and outputs are unchanged since last successful run
+    let current = BuildManifest::from_files(file_name, ta_cbor, valid_ca_cbor, invalid_ca_cbor, all_ca_cbor);
+    if let Some(saved) = BuildManifest::read(BUILD_MANIFEST) {
+        if saved == current {
+            println!("cargo::warning=All inputs and outputs unchanged per build_manifest.json; skipping processing");
+            return;
+        }
+    }
+
     // when contents of this vector change, update the same in fail_on_missing_known_issues test
     // mut is used when unverified_amd_roots is not used
     #[allow(unused_mut)]
@@ -136,34 +198,6 @@ pub async fn process_cab(
         "NationZ\\IntermediateCA\\NSTPMEccEkCA005.crt",
     ];
 
-    let ta_cbor_hash = match fs::read(ta_cbor) {
-        Ok(ta_cbor) => Sha256::digest(ta_cbor).as_slice().to_vec(),
-        Err(e) => {
-            println!("cargo::warning=Failed to read previous TA CBOR from {ta_cbor}. Ignoring and continuing. Error: {e:?}");
-            vec![]
-        }
-    };
-    let ca_cbor_hash = match fs::read(valid_ca_cbor) {
-        Ok(ca_cbor) => Sha256::digest(ca_cbor).as_slice().to_vec(),
-        Err(e) => {
-            println!("cargo::warning=Failed to read previous CA CBOR from {valid_ca_cbor}. Ignoring and continuing. Error: {e:?}");
-            vec![]
-        }
-    };
-    let invalid_ca_cbor_hash = match fs::read(invalid_ca_cbor) {
-        Ok(ca_cbor) => Sha256::digest(ca_cbor).as_slice().to_vec(),
-        Err(e) => {
-            println!("cargo::warning=Failed to read previous invalid CA CBOR from {invalid_ca_cbor}. Ignoring and continuing. Error: {e:?}");
-            vec![]
-        }
-    };
-    let all_ca_cbor_hash = match fs::read(all_ca_cbor) {
-        Ok(ca_cbor) => Sha256::digest(ca_cbor).as_slice().to_vec(),
-        Err(e) => {
-            println!("cargo::warning=Failed to read previous all CA CBOR from {all_ca_cbor}. Ignoring and continuing. Error: {e:?}");
-            vec![]
-        }
-    };
     let cab_hash = match fs::read(file_name) {
         Ok(cab_buf) => Sha256::digest(cab_buf).as_slice().to_vec(),
         Err(e) => {
@@ -412,10 +446,8 @@ pub async fn process_cab(
 
     match ta_serialization.serialize(CertificationPathBuilderFormats::Cbor) {
         Ok(graph) => {
-            if ta_cbor_hash != Sha256::digest(&graph).as_slice().to_vec() {
-                fs::write(ta_cbor, graph.as_slice())
-                    .expect("Unable to write generated CBOR file with trust anchor certificates");
-            }
+            fs::write(ta_cbor, graph.as_slice())
+                .expect("Unable to write generated CBOR file with trust anchor certificates");
         }
         Err(e) => {
             println!("cargo::warning=failed to write TA collection to a CBOR file. Ignoring and continuing. Error: {e:?}");
@@ -533,10 +565,8 @@ pub async fn process_cab(
     cert_source.find_all_partial_paths(&pe, &cps);
     match cert_source.serialize(CertificationPathBuilderFormats::Cbor) {
         Ok(graph) => {
-            if all_ca_cbor_hash != Sha256::digest(&graph).as_slice().to_vec() {
-                fs::write(all_ca_cbor, graph.as_slice())
-                    .expect("Unable to write generated CBOR file with CAs and partial paths");
-            }
+            fs::write(all_ca_cbor, graph.as_slice())
+                .expect("Unable to write generated CBOR file with CAs and partial paths");
         }
         Err(e) => {
             println!("cargo::warning=failed to write CAs and partial paths to a CBOR file. Ignoring and continuing. Error: {e:?}");
@@ -606,10 +636,8 @@ pub async fn process_cab(
     // serialize only the CA certs for which a valid path was found
     match cert_source_valid.serialize(CertificationPathBuilderFormats::Cbor) {
         Ok(graph) => {
-            if ca_cbor_hash != Sha256::digest(&graph).as_slice().to_vec() {
-                fs::write(valid_ca_cbor, graph.as_slice())
-                    .expect("Unable to write generated CBOR file with CAs and partial paths");
-            }
+            fs::write(valid_ca_cbor, graph.as_slice())
+                .expect("Unable to write generated CBOR file with CAs and partial paths");
         }
         Err(e) => {
             println!("cargo::warning=failed to write CAs and partial paths to a CBOR file. Ignoring and continuing. Error: {e:?}");
@@ -618,15 +646,17 @@ pub async fn process_cab(
 
     match cert_source_invalid.serialize(CertificationPathBuilderFormats::Cbor) {
         Ok(graph) => {
-            if invalid_ca_cbor_hash != Sha256::digest(&graph).as_slice().to_vec() {
-                fs::write(invalid_ca_cbor, graph.as_slice())
-                    .expect("Unable to write generated CBOR file with CAs and partial paths");
-            }
+            fs::write(invalid_ca_cbor, graph.as_slice())
+                .expect("Unable to write generated CBOR file with CAs and partial paths");
         }
         Err(e) => {
             println!("cargo::warning=failed to write CAs and partial paths to a CBOR file. Ignoring and continuing. Error: {e:?}");
         }
     }
+
+    // Write manifest with hashes of all current files for next-run short-circuit
+    let final_manifest = BuildManifest::from_files(file_name, ta_cbor, valid_ca_cbor, invalid_ca_cbor, all_ca_cbor);
+    final_manifest.write(BUILD_MANIFEST);
 
     for skipped in skipped_files {
         if !known_skips.contains(&skipped.as_str()) {

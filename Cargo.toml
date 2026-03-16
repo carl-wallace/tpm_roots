@@ -1,6 +1,6 @@
 [package]
 name = "tpm_roots"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 rust-version = "1.80.1"
 
@@ -52,38 +52,24 @@ sha2 = "0.11.0-rc.0"
 
 cab = "0.6.0"
 reqwest = "0.13.2"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
 tokio = { version = "1.49.0", features = ["full", "time", "rt-multi-thread"]}
 
 [features]
 unverified_amd_roots = []
 sha1_certs = []
 
-[patch.crates-io]
-# RustCrypto repos
-primefield = { git = "https://github.com/RustCrypto/elliptic-curves.git" }
-p256       = { git = "https://github.com/RustCrypto/elliptic-curves.git" }
-p384       = { git = "https://github.com/RustCrypto/elliptic-curves.git" }
-p521       = { git = "https://github.com/RustCrypto/elliptic-curves.git" }
+[profile.dev.build-override]
+debug = true
 
-cmpv2      = { git = "https://github.com/RustCrypto/formats.git" }
+[patch.crates-io]
 cms        = { git = "https://github.com/RustCrypto/formats.git" }
+cmpv2      = { git = "https://github.com/RustCrypto/formats.git" }
 crmf       = { git = "https://github.com/RustCrypto/formats.git" }
-der        = { git = "https://github.com/RustCrypto/formats.git" }
-der_derive = { git = "https://github.com/RustCrypto/formats.git" }
-pkcs1      = { git = "https://github.com/RustCrypto/formats.git" }
-pkcs5      = { git = "https://github.com/RustCrypto/formats.git" }
-spki       = { git = "https://github.com/RustCrypto/formats.git" }
-x509-cert  = { git = "https://github.com/RustCrypto/formats.git" }
+pkcs12     = { git = "https://github.com/RustCrypto/formats.git" }
 x509-ocsp  = { git = "https://github.com/RustCrypto/formats.git" }
 x509-tsp   = { git = "https://github.com/RustCrypto/formats.git" }
 
-sha1       = { git = "https://github.com/RustCrypto/hashes.git" }
-sha2       = { git = "https://github.com/RustCrypto/hashes.git" }
-
-rsa            = { git = "https://github.com/RustCrypto/RSA.git" }
-crypto-bigint  = { git = "https://github.com/RustCrypto/crypto-bigint.git" }
-elliptic-curve = { git = "https://github.com/RustCrypto/traits.git" }
-ecdsa          = { git = "https://github.com/RustCrypto/signatures.git"}
-
 # Miscellaneous repos
-authenticode   = {git = "https://github.com/carl-wallace/authenticode-rs.git", branch = "updates"}
+authenticode = {git = "https://github.com/carl-wallace/authenticode-rs.git", branch = "updates"}
