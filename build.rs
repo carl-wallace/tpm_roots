@@ -95,7 +95,13 @@ pub async fn process_cab(
     all_ca_cbor: &str,
 ) {
     // Check if inputs and outputs are unchanged since last successful run
-    let current = BuildManifest::from_files(file_name, ta_cbor, valid_ca_cbor, invalid_ca_cbor, all_ca_cbor);
+    let current = BuildManifest::from_files(
+        file_name,
+        ta_cbor,
+        valid_ca_cbor,
+        invalid_ca_cbor,
+        all_ca_cbor,
+    );
     if let Some(saved) = BuildManifest::read(BUILD_MANIFEST) {
         if saved == current {
             println!("cargo::warning=All inputs and outputs unchanged per build_manifest.json; skipping processing");
@@ -648,7 +654,13 @@ pub async fn process_cab(
     }
 
     // Write manifest with hashes of all current files for next-run short-circuit
-    let final_manifest = BuildManifest::from_files(file_name, ta_cbor, valid_ca_cbor, invalid_ca_cbor, all_ca_cbor);
+    let final_manifest = BuildManifest::from_files(
+        file_name,
+        ta_cbor,
+        valid_ca_cbor,
+        invalid_ca_cbor,
+        all_ca_cbor,
+    );
     final_manifest.write(BUILD_MANIFEST);
 
     for skipped in skipped_files {
