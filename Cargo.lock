@@ -85,7 +85,7 @@ checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 [[package]]
 name = "authenticode"
 version = "0.4.3-pre.0"
-source = "git+https://github.com/carl-wallace/authenticode-rs.git?branch=updates#05a741241a65c4be31dc47ee11db1806e37be606"
+source = "git+https://github.com/carl-wallace/authenticode-rs.git?branch=updates#96d3262c52d68a4382c4105691b8b7cb31b1794a"
 dependencies = [
  "cms",
  "const-oid",
@@ -244,7 +244,7 @@ dependencies = [
 [[package]]
 name = "certval"
 version = "0.1.4"
-source = "git+https://github.com/carl-wallace/rust-pki.git?branch=pre-release#6ed86e21ca005ad7e00e3e2bab8b4b9214a8c85f"
+source = "git+https://github.com/carl-wallace/rust-pki.git?branch=pre-release#8688f9c013fce8c237e2dedbea38fb6ab23f8fdc"
 dependencies = [
  "base64ct",
  "bitvec",
@@ -1571,7 +1571,7 @@ dependencies = [
 [[package]]
 name = "pkiprocmacros"
 version = "0.1.2"
-source = "git+https://github.com/carl-wallace/rust-pki.git?branch=pre-release#6ed86e21ca005ad7e00e3e2bab8b4b9214a8c85f"
+source = "git+https://github.com/carl-wallace/rust-pki.git?branch=pre-release#8688f9c013fce8c237e2dedbea38fb6ab23f8fdc"
 dependencies = [
  "quote",
  "syn",
@@ -2578,7 +2578,7 @@ checksum = "8df9b6e13f2d32c91b9bd719c00d1958837bc7dec474d94952798cc8e69eeec3"
 [[package]]
 name = "tpm_cab_verify"
 version = "0.1.2"
-source = "git+https://github.com/carl-wallace/tpm_cab_verify.git?branch=updates#3127e3ad4a3d64cd8f454f507fb33ea320b51976"
+source = "git+https://github.com/carl-wallace/tpm_cab_verify.git?branch=updates#8197dc26ef9936055410857d8febc76ee8137b23"
 dependencies = [
  "authenticode",
  "bincode",

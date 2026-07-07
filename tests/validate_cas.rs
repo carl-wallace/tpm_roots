@@ -1,7 +1,6 @@
 //! Test cases to generate a report detailing CA validation
 //!
 use certval::PathValidationStatus;
-use certval::TimeOfInterest;
 use log::error;
 use rsa::Pkcs1v15Sign;
 use rsa::RsaPublicKey;
@@ -829,6 +828,8 @@ fn fail_on_new_folders() {
 //     assert_eq!(0, infineon_validation_issues.len());
 // }
 
+// Used by the fail_on_missing_known_issues test, which is currently commented out.
+#[allow(dead_code)]
 fn purge_exists(folder: &str, expected: &mut Vec<&str>) {
     for entry in WalkDir::new(folder) {
         match entry {
@@ -871,8 +872,9 @@ async fn test_cab() {
     );
     let mut pe = PkiEnvironment::default();
     pe.populate_5280_pki_environment();
-    let mut cps = CertificationPathSettings::default();
-    cps.set_time_of_interest(TimeOfInterest::from_unix_secs(1771864105).unwrap());
+    // No time of interest is set here: tpm_cab_verify validates the signing certificates at the
+    // genTime from the verified timestamp, so verification does not break as they expire.
+    let cps = CertificationPathSettings::default();
     cvp.verify(&mut pe, &cps).await.unwrap();
 }
 

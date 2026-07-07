@@ -13,8 +13,22 @@ async fn main() {
         "valid_ca.cbor",
         "invalid_ca.cbor",
         "all_ca.cbor",
+        "ca.cbor",
     )
     .await;
+
+    // ca.cbor is what lib.rs embeds via include_bytes!. Refuse to build if it does not match the
+    // validated output so a stale or hand-edited trust set can never ship silently.
+    let ca_hash = hash_file("ca.cbor");
+    let valid_ca_hash = hash_file("valid_ca.cbor");
+    if ca_hash.is_empty() || ca_hash != valid_ca_hash {
+        panic!(
+            "ca.cbor does not match the validated CA set in valid_ca.cbor (ca.cbor: {ca_hash:?}, \
+            valid_ca.cbor: {valid_ca_hash:?}). The shipped trust set must be the validated output. \
+            Resolve any build warnings above (e.g., CAB download or verification failures) and rebuild."
+        );
+    }
+
     println!(
         "cargo::warning=Completed TPM CAB processing in {} seconds",
         timer.elapsed().as_secs_f64()
@@ -23,7 +37,7 @@ async fn main() {
 
 use base64ct::{Base64, Encoding};
 use serde::{Deserialize, Serialize};
-use std::io::BufRead;
+use std::io::{BufRead, Seek};
 use std::time::Instant;
 use std::{ffi::OsStr, fs, io::Read, path::Path};
 
@@ -52,6 +66,48 @@ struct BuildManifest {
     valid_ca_cbor: String,
     invalid_ca_cbor: String,
     all_ca_cbor: String,
+    ca_cbor: String,
+}
+
+/// Parse the first date of the form DD-Month-YYYY from a version.txt, i.e., the "last updated"
+/// date, as a (year, month, day) tuple that sorts chronologically.
+fn parse_version_date(text: &str) -> Option<(u16, u8, u8)> {
+    const MONTHS: [&str; 12] = [
+        "january",
+        "february",
+        "march",
+        "april",
+        "may",
+        "june",
+        "july",
+        "august",
+        "september",
+        "october",
+        "november",
+        "december",
+    ];
+    for line in text.lines() {
+        let parts: Vec<&str> = line.trim().splitn(3, '-').collect();
+        if parts.len() == 3 {
+            if let (Ok(day), Some(month), Ok(year)) = (
+                parts[0].parse::<u8>(),
+                MONTHS.iter().position(|m| m.eq_ignore_ascii_case(parts[1])),
+                parts[2].parse::<u16>(),
+            ) {
+                return Some((year, month as u8 + 1, day));
+            }
+        }
+    }
+    None
+}
+
+/// Read the "last updated" date from the version.txt inside a CAB file.
+fn cab_content_date<R: Read + Seek>(reader: R) -> Option<(u16, u8, u8)> {
+    let mut cabinet = cab::Cabinet::new(reader).ok()?;
+    let mut file = cabinet.read_file("version.txt").ok()?;
+    let mut text = String::new();
+    file.read_to_string(&mut text).ok()?;
+    parse_version_date(&text)
 }
 
 fn hash_file(path: &str) -> String {
@@ -65,13 +121,21 @@ fn hash_file(path: &str) -> String {
 }
 
 impl BuildManifest {
-    fn from_files(cab: &str, ta: &str, valid_ca: &str, invalid_ca: &str, all_ca: &str) -> Self {
+    fn from_files(
+        cab: &str,
+        ta: &str,
+        valid_ca: &str,
+        invalid_ca: &str,
+        all_ca: &str,
+        ca: &str,
+    ) -> Self {
         BuildManifest {
             cab: hash_file(cab),
             ta_cbor: hash_file(ta),
             valid_ca_cbor: hash_file(valid_ca),
             invalid_ca_cbor: hash_file(invalid_ca),
             all_ca_cbor: hash_file(all_ca),
+            ca_cbor: hash_file(ca),
         }
     }
 
@@ -93,17 +157,24 @@ pub async fn process_cab(
     valid_ca_cbor: &str,
     invalid_ca_cbor: &str,
     all_ca_cbor: &str,
+    ca_cbor: &str,
 ) {
-    // Check if inputs and outputs are unchanged since last successful run
+    // Check if inputs and outputs are unchanged since last successful run. Only skip when the
+    // shipped ca.cbor is present and identical to the validated valid_ca.cbor, so the cache can
+    // never bypass re-validation of a stale or divergent shipped trust set.
     let current = BuildManifest::from_files(
         file_name,
         ta_cbor,
         valid_ca_cbor,
         invalid_ca_cbor,
         all_ca_cbor,
+        ca_cbor,
     );
     if let Some(saved) = BuildManifest::read(BUILD_MANIFEST) {
-        if saved == current {
+        if saved == current
+            && !current.ca_cbor.is_empty()
+            && current.ca_cbor == current.valid_ca_cbor
+        {
             println!("cargo::warning=All inputs and outputs unchanged per build_manifest.json; skipping processing");
             return;
         }
@@ -228,18 +299,39 @@ pub async fn process_cab(
                 pe.populate_5280_pki_environment();
                 let cps = CertificationPathSettings::default();
                 match cvp.verify(&mut pe, &cps).await {
-                    Ok(()) => match fs::write("TrustedTpm.cab", bytes) {
-                        Ok(_) => {
-                            println ! ("cargo::warning=A new TPM CAB file was downloaded and verified from {source} and \
-                            saved as TrustedTpm.cab for use in this build process");
+                    Ok(()) => {
+                        // Guard against upstream serving older content than what is already
+                        // committed (observed in July 2026): compare the "last updated" dates in
+                        // version.txt and refuse to roll the trust set back.
+                        let new_date = cab_content_date(std::io::Cursor::new(bytes.to_vec()));
+                        let old_date = fs::File::open(file_name).ok().and_then(cab_content_date);
+                        if new_date.is_none() || old_date.is_none() {
+                            println!("cargo::warning=Could not read the version.txt date from the downloaded CAB ({new_date:?}) or from {file_name} ({old_date:?}); proceeding with replacement");
                         }
-                        Err(e) => {
-                            println ! ("cargo::warning=A new TPM CAB file was downloaded and verified from {source}. \
-                            An attempted was made to save the file as TrustedTpm.cab failed: {e:?}. \
-                            Download and verify it per the instructions at the following URL then put the resulting \
-                            file at the root of this crate: https://learn.microsoft.com/en-us/windows-server/security/guarded-fabric-shielded-vm/guarded-fabric-install-trusted-tpm-root-certificates");
+                        let rollback = match (new_date, old_date) {
+                            (Some(new_date), Some(old_date)) => new_date < old_date,
+                            _ => false,
+                        };
+                        if rollback {
+                            // Fall through and process the (newer) local file below
+                            println ! ("cargo::warning=The verified TPM CAB file downloaded from {source} has older content \
+                            (version.txt date {:?}) than the local {file_name} ({:?}). Refusing to roll back; \
+                            keeping the local file", new_date, old_date);
+                        } else {
+                            match fs::write("TrustedTpm.cab", bytes) {
+                                Ok(_) => {
+                                    println ! ("cargo::warning=A new TPM CAB file was downloaded and verified from {source} and \
+                                    saved as TrustedTpm.cab for use in this build process");
+                                }
+                                Err(e) => {
+                                    println ! ("cargo::warning=A new TPM CAB file was downloaded and verified from {source}. \
+                                    An attempted was made to save the file as TrustedTpm.cab failed: {e:?}. \
+                                    Download and verify it per the instructions at the following URL then put the resulting \
+                                    file at the root of this crate: https://learn.microsoft.com/en-us/windows-server/security/guarded-fabric-shielded-vm/guarded-fabric-install-trusted-tpm-root-certificates");
+                                }
+                            }
                         }
-                    },
+                    }
                     Err(e) => {
                         println ! ("cargo::warning=A new TPM CAB file that could not be verified is available \
                     from {source}. Download and verify it per the instructions at the following URL then \
@@ -632,14 +724,17 @@ pub async fn process_cab(
 
     cert_source_valid.find_all_partial_paths(&pe, &cps);
 
-    // serialize only the CA certs for which a valid path was found
+    // serialize only the CA certs for which a valid path was found. This is the trust set the
+    // library ships (via include_bytes! of ca.cbor), so failure to produce it fails the build.
     match cert_source_valid.serialize(CertificationPathBuilderFormats::Cbor) {
         Ok(graph) => {
             fs::write(valid_ca_cbor, graph.as_slice())
                 .expect("Unable to write generated CBOR file with CAs and partial paths");
+            fs::write(ca_cbor, graph.as_slice())
+                .expect("Unable to write generated CBOR file with validated CAs for shipping");
         }
         Err(e) => {
-            println!("cargo::warning=failed to write CAs and partial paths to a CBOR file. Ignoring and continuing. Error: {e:?}");
+            panic!("failed to serialize the validated CA set that ships as ca.cbor: {e:?}");
         }
     }
 
@@ -660,6 +755,7 @@ pub async fn process_cab(
         valid_ca_cbor,
         invalid_ca_cbor,
         all_ca_cbor,
+        ca_cbor,
     );
     final_manifest.write(BUILD_MANIFEST);
 
