@@ -26,11 +26,9 @@ use x509_cert::spki::{AlgorithmIdentifierOwned, SubjectPublicKeyInfoOwned};
 #[cfg(test)]
 fn decode_broken_pem(bad_pem: &[u8]) -> certval::Result<Vec<u8>> {
     let mut b64 = String::with_capacity(bad_pem.len());
-    for line in bad_pem.lines() {
-        if let Ok(line) = line {
-            if line.chars().next().unwrap_or_default() != '-' {
-                b64 += line.trim();
-            }
+    for line in bad_pem.lines().map_while(Result::ok) {
+        if line.chars().next().unwrap_or_default() != '-' {
+            b64 += line.trim();
         }
     }
 
@@ -44,10 +42,10 @@ fn decode_broken_pem(bad_pem: &[u8]) -> certval::Result<Vec<u8>> {
 #[cfg(test)]
 fn parse_cert(buf: &[u8]) -> certval::Result<PDVCertificate> {
     let buf = if buf.first() != Some(&0x30) {
-        match pem_rfc7468::decode_vec(&buf) {
+        match pem_rfc7468::decode_vec(buf) {
             Ok(b) => b.1,
             Err(_e) => {
-                if let Ok(b) = decode_broken_pem(&buf) {
+                if let Ok(b) = decode_broken_pem(buf) {
                     b
                 } else {
                     return Err(Error::ParseError);
@@ -242,7 +240,7 @@ async fn validate_intermediate_cas(
                     let mut cpr = CertificationPathResults::new();
                     match vi.pe.validate_path(&vi.pe, &vi.cps, path, &mut cpr) {
                         Ok(_) => {
-                            *target.1 = verification_status.clone();
+                            *target.1 = verification_status;
                             break;
                         }
                         Err(e) => {
@@ -272,7 +270,7 @@ async fn common_cases(folder: &str, known_issues: &[&str]) {
     }
 
     let mut v = Vec::from_iter(&vi.targets);
-    v.sort_by(|&(_, a), &(_, b)| b.cmp(&a));
+    v.sort_by(|&(_, a), &(_, b)| b.cmp(a));
     for target in v {
         println!(
             "{}: {:?}",
@@ -280,7 +278,7 @@ async fn common_cases(folder: &str, known_issues: &[&str]) {
             target.1
         );
     }
-    assert!(vi.all_verified(&known_issues));
+    assert!(vi.all_verified(known_issues));
     if !known_issues.is_empty() {
         println!(
             "{} known issues that have no current remedy",
@@ -355,7 +353,7 @@ async fn validate_cas_amd() {
     }
 
     let mut v = Vec::from_iter(&vi.targets);
-    v.sort_by(|&(_, a), &(_, b)| b.cmp(&a));
+    v.sort_by(|&(_, a), &(_, b)| b.cmp(a));
     for target in v {
         println!(
             "{}: {:?}",
@@ -457,7 +455,7 @@ async fn validate_cas_infineon() {
     }
 
     let mut v = Vec::from_iter(&vi.targets);
-    v.sort_by(|&(_, a), &(_, b)| b.cmp(&a));
+    v.sort_by(|&(_, a), &(_, b)| b.cmp(a));
     for target in v {
         println!(
             "{}: {:?}",
@@ -635,11 +633,10 @@ fn fail_on_new_folders() {
                 continue;
             }
 
-            for c in Path::new(&file_name).components() {
+            // only the leading path component (the vendor folder) is validated
+            if let Some(c) = Path::new(&file_name).components().next() {
                 if let Some(s) = c.as_os_str().to_str() {
-                    if expected_folders.contains(&s) {
-                        break;
-                    } else {
+                    if !expected_folders.contains(&s) {
                         panic!("{s} in an unexpected folder. Please add a unit test to validate CAs in this folder.");
                     }
                 } else {
