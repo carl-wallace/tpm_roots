@@ -8,9 +8,11 @@ CA as part of a SCEP request.
 The certificates included in this crate are assumed to have been obtained per the instructions [here](https://learn.microsoft.com/en-us/windows-server/security/guarded-fabric-shielded-vm/guarded-fabric-install-trusted-tpm-root-certificates)
 with the resulting manually verified `TrustedTpm.cab` file placed at the root of this crate. A build script processes
 the CAB file to prepare the artifacts used by the functional interface of the crate. The build script will attempt to 
-download an updated file, and if one is found, validate it, save it to the repo and use it for building. CAB verification 
-is performed via the `tpm_cab_verify` crate. Certificates from the CAB file that cannot be validated will be discarded
-with a log message emitted.
+download an updated file, and if one is found, validate it, save it to the repo and use it for building. A downloaded
+file whose contents are older than the local copy (per the date in version.txt) will not replace the local file, guarding
+against an upstream rollback. CAB verification is performed via the `tpm_cab_verify` crate. Certificates from the CAB
+file that cannot be validated will be discarded with a log message emitted. The validated CA set is written to ca.cbor,
+which the library embeds, and the build fails if ca.cbor does not match the validated output.
 
 ## Features
 

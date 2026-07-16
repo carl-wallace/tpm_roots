@@ -28,7 +28,7 @@ fn get_cas_as_cert_files() -> Result<Vec<CertFile>> {
     let cert_store = match CertSource::new_from_cbor(&CA_CBOR) {
         Ok(cert_store) => cert_store,
         Err(e) => {
-            error!("Failed to parse ta.cbor file as a TaSource: {e:?}");
+            error!("Failed to parse ca.cbor file as a CertSource: {e:?}");
             return Err(e);
         }
     };
@@ -197,7 +197,7 @@ pub fn get_cas() -> Result<Vec<Certificate>> {
     let cert_store = match CertSource::new_from_cbor(&CA_CBOR) {
         Ok(cert_store) => cert_store,
         Err(e) => {
-            error!("Failed to parse ta.cbor file as a TaSource: {e:?}");
+            error!("Failed to parse ca.cbor file as a CertSource: {e:?}");
             return Err(e);
         }
     };
@@ -207,7 +207,7 @@ pub fn get_cas() -> Result<Vec<Certificate>> {
         match Certificate::from_der(&cert.bytes) {
             Ok(cert) => cas.push(cert),
             Err(e) => {
-                error!("Failed to parse certificate from {} as a TrustAnchorInfo. Ignoring and continuing. Error: {e:?}", cert.filename);
+                error!("Failed to parse certificate from {} as a Certificate. Ignoring and continuing. Error: {e:?}", cert.filename);
             }
         }
     }

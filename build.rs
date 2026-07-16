@@ -4,6 +4,7 @@ async fn main() {
     println!("cargo::rerun-if-changed=TrustedTpm.cab");
     println!("cargo::rerun-if-changed=ta.cbor");
     println!("cargo::rerun-if-changed=ca.cbor");
+    println!("cargo::rerun-if-changed=build_manifest.json");
     println!("cargo::warning=Processing TrustedTpm.cab");
     let timer = Instant::now();
     process_cab(
@@ -12,8 +13,22 @@ async fn main() {
         "valid_ca.cbor",
         "invalid_ca.cbor",
         "all_ca.cbor",
+        "ca.cbor",
     )
     .await;
+
+    // ca.cbor is what lib.rs embeds via include_bytes!. Refuse to build if it does not match the
+    // validated output so a stale or hand-edited trust set can never ship silently.
+    let ca_hash = hash_file("ca.cbor");
+    let valid_ca_hash = hash_file("valid_ca.cbor");
+    if ca_hash.is_empty() || ca_hash != valid_ca_hash {
+        panic!(
+            "ca.cbor does not match the validated CA set in valid_ca.cbor (ca.cbor: {ca_hash:?}, \
+            valid_ca.cbor: {valid_ca_hash:?}). The shipped trust set must be the validated output. \
+            Resolve any build warnings above (e.g., CAB download or verification failures) and rebuild."
+        );
+    }
+
     println!(
         "cargo::warning=Completed TPM CAB processing in {} seconds",
         timer.elapsed().as_secs_f64()
@@ -21,7 +36,8 @@ async fn main() {
 }
 
 use base64ct::{Base64, Encoding};
-use std::io::BufRead;
+use serde::{Deserialize, Serialize};
+use std::io::{BufRead, Seek};
 use std::time::Instant;
 use std::{ffi::OsStr, fs, io::Read, path::Path};
 
@@ -41,13 +57,129 @@ use certval::{
 };
 use tpm_cab_verify::CabVerifyParts;
 
+const BUILD_MANIFEST: &str = "build_manifest.json";
+
+#[derive(Serialize, Deserialize, PartialEq)]
+struct BuildManifest {
+    cab: String,
+    ta_cbor: String,
+    valid_ca_cbor: String,
+    invalid_ca_cbor: String,
+    all_ca_cbor: String,
+    ca_cbor: String,
+}
+
+/// Parse the first date of the form DD-Month-YYYY from a version.txt, i.e., the "last updated"
+/// date, as a (year, month, day) tuple that sorts chronologically.
+fn parse_version_date(text: &str) -> Option<(u16, u8, u8)> {
+    const MONTHS: [&str; 12] = [
+        "january",
+        "february",
+        "march",
+        "april",
+        "may",
+        "june",
+        "july",
+        "august",
+        "september",
+        "october",
+        "november",
+        "december",
+    ];
+    for line in text.lines() {
+        let parts: Vec<&str> = line.trim().splitn(3, '-').collect();
+        if parts.len() == 3 {
+            if let (Ok(day), Some(month), Ok(year)) = (
+                parts[0].parse::<u8>(),
+                MONTHS.iter().position(|m| m.eq_ignore_ascii_case(parts[1])),
+                parts[2].parse::<u16>(),
+            ) {
+                return Some((year, month as u8 + 1, day));
+            }
+        }
+    }
+    None
+}
+
+/// Read the "last updated" date from the version.txt inside a CAB file.
+fn cab_content_date<R: Read + Seek>(reader: R) -> Option<(u16, u8, u8)> {
+    let mut cabinet = cab::Cabinet::new(reader).ok()?;
+    let mut file = cabinet.read_file("version.txt").ok()?;
+    let mut text = String::new();
+    file.read_to_string(&mut text).ok()?;
+    parse_version_date(&text)
+}
+
+fn hash_file(path: &str) -> String {
+    match fs::read(path) {
+        Ok(data) => {
+            let digest = Sha256::digest(&data);
+            digest.iter().map(|b| format!("{:02x}", b)).collect()
+        }
+        Err(_) => String::new(),
+    }
+}
+
+impl BuildManifest {
+    fn from_files(
+        cab: &str,
+        ta: &str,
+        valid_ca: &str,
+        invalid_ca: &str,
+        all_ca: &str,
+        ca: &str,
+    ) -> Self {
+        BuildManifest {
+            cab: hash_file(cab),
+            ta_cbor: hash_file(ta),
+            valid_ca_cbor: hash_file(valid_ca),
+            invalid_ca_cbor: hash_file(invalid_ca),
+            all_ca_cbor: hash_file(all_ca),
+            ca_cbor: hash_file(ca),
+        }
+    }
+
+    fn read(path: &str) -> Option<Self> {
+        let data = fs::read_to_string(path).ok()?;
+        serde_json::from_str(&data).ok()
+    }
+
+    fn write(&self, path: &str) {
+        if let Ok(json) = serde_json::to_string_pretty(self) {
+            let _ = fs::write(path, json);
+        }
+    }
+}
+
 pub async fn process_cab(
     file_name: &str,
     ta_cbor: &str,
     valid_ca_cbor: &str,
     invalid_ca_cbor: &str,
     all_ca_cbor: &str,
+    ca_cbor: &str,
 ) {
+    // Check if inputs and outputs are unchanged since last successful run. Only skip when the
+    // shipped ca.cbor is present and identical to the validated valid_ca.cbor, so the cache can
+    // never bypass re-validation of a stale or divergent shipped trust set.
+    let current = BuildManifest::from_files(
+        file_name,
+        ta_cbor,
+        valid_ca_cbor,
+        invalid_ca_cbor,
+        all_ca_cbor,
+        ca_cbor,
+    );
+    if let Some(saved) = BuildManifest::read(BUILD_MANIFEST) {
+        if saved == current
+            && !current.ca_cbor.is_empty()
+            && current.ca_cbor == current.valid_ca_cbor
+        {
+            println!("cargo::warning=All inputs and outputs unchanged per build_manifest.json; skipping processing");
+            return;
+        }
+    }
+
     // when contents of this vector change, update the same in fail_on_missing_known_issues test
     // mut is used when unverified_amd_roots is not used
     #[allow(unused_mut)]
@@ -136,24 +268,10 @@ pub async fn process_cab(
         "NationZ\\IntermediateCA\\NSTPMEccEkCA005.crt",
     ];
 
-    let ta_cbor_hash = match fs::read(ta_cbor) {
-        Ok(ta_cbor) => Sha256::digest(ta_cbor).as_slice().to_vec(),
-        Err(e) => {
-            println!("cargo::warning=Failed to read previous TA CBOR from {ta_cbor}. Ignoring and continuing. Error: {e:?}");
-            vec![]
-        }
-    };
-    let ca_cbor_hash = match fs::read(valid_ca_cbor) {
-        Ok(ca_cbor) => Sha256::digest(ca_cbor).as_slice().to_vec(),
-        Err(e) => {
-            println!("cargo::warning=Failed to read previous CA CBOR from {valid_ca_cbor}. Ignoring and continuing. Error: {e:?}");
-            vec![]
-        }
-    };
     let cab_hash = match fs::read(file_name) {
         Ok(cab_buf) => Sha256::digest(cab_buf).as_slice().to_vec(),
         Err(e) => {
-            println!("cargo::warning=Failed to read previous CA CBOR from {file_name}. Ignoring and continuing. Error: {e:?}");
+            println!("cargo::warning=Failed to read previous CAB file from {file_name}. Ignoring and continuing. Error: {e:?}");
             vec![]
         }
     };
@@ -166,35 +284,67 @@ pub async fn process_cab(
             return;
         }
     };
-    if let Ok(bytes) = response.bytes().await {
-        if cab_hash != Sha256::digest(bytes.clone()).to_vec() {
-            let cursor = std::io::Cursor::new(bytes.to_vec());
-            let cvp = CabVerifyParts::new(cursor).unwrap();
-            let mut pe = PkiEnvironment::default();
-            pe.populate_5280_pki_environment();
-            let cps = CertificationPathSettings::default();
-            match cvp.verify(&mut pe, &cps).await {
-                Ok(()) => match fs::write("TrustedTpm.cab", bytes) {
-                    Ok(_) => {
-                        println!("cargo::warning=A new TPM CAB file was downloaded and verified from {source} and \
-                            saved as TrustedTpm.cab for use in this build process");
+    match response.bytes().await {
+        Ok(bytes) => {
+            if cab_hash != Sha256::digest(bytes.clone()).to_vec() {
+                let cursor = std::io::Cursor::new(bytes.to_vec());
+                let cvp = match CabVerifyParts::new(cursor) {
+                    Ok(cvp) => cvp,
+                    Err(e) => {
+                        println ! ("cargo::warning=Failed to parse CAB verification parts for TPM CAB file downloaded from {source}: {e:?}");
+                        return;
+                    }
+                };
+                let mut pe = PkiEnvironment::default();
+                pe.populate_5280_pki_environment();
+                let cps = CertificationPathSettings::default();
+                match cvp.verify(&mut pe, &cps).await {
+                    Ok(()) => {
+                        // Guard against upstream serving older content than what is already
+                        // committed (observed in July 2026): compare the "last updated" dates in
+                        // version.txt and refuse to roll the trust set back.
+                        let new_date = cab_content_date(std::io::Cursor::new(bytes.to_vec()));
+                        let old_date = fs::File::open(file_name).ok().and_then(cab_content_date);
+                        if new_date.is_none() || old_date.is_none() {
+                            println!("cargo::warning=Could not read the version.txt date from the downloaded CAB ({new_date:?}) or from {file_name} ({old_date:?}); proceeding with replacement");
+                        }
+                        let rollback = match (new_date, old_date) {
+                            (Some(new_date), Some(old_date)) => new_date < old_date,
+                            _ => false,
+                        };
+                        if rollback {
+                            // Fall through and process the (newer) local file below
+                            println ! ("cargo::warning=The verified TPM CAB file downloaded from {source} has older content \
+                            (version.txt date {:?}) than the local {file_name} ({:?}). Refusing to roll back; \
+                            keeping the local file", new_date, old_date);
+                        } else {
+                            match fs::write("TrustedTpm.cab", bytes) {
+                                Ok(_) => {
+                                    println ! ("cargo::warning=A new TPM CAB file was downloaded and verified from {source} and \
+                                    saved as TrustedTpm.cab for use in this build process");
+                                }
+                                Err(e) => {
+                                    println ! ("cargo::warning=A new TPM CAB file was downloaded and verified from {source}. \
+                                    An attempted was made to save the file as TrustedTpm.cab failed: {e:?}. \
+                                    Download and verify it per the instructions at the following URL then put the resulting \
+                                    file at the root of this crate: https://learn.microsoft.com/en-us/windows-server/security/guarded-fabric-shielded-vm/guarded-fabric-install-trusted-tpm-root-certificates");
+                                }
+                            }
+                        }
                     }
                     Err(e) => {
-                        println!("cargo::warning=A new TPM CAB file was downloaded and verified from {source}. \
-                            An attempted was made to save the file as TrustedTpm.cab failed: {e:?}. \
-                            Download and verify it per the instructions at the following URL then put the resulting \
-                            file at the root of this crate: https://learn.microsoft.com/en-us/windows-server/security/guarded-fabric-shielded-vm/guarded-fabric-install-trusted-tpm-root-certificates");
-                    }
-                },
-                Err(e) => {
-                    println!("cargo::warning=A new TPM CAB file that could not be verified is available \
+                        println ! ("cargo::warning=A new TPM CAB file that could not be verified is available \
                     from {source}. Download and verify it per the instructions at the following URL then \
                     put the resulting file at the root of this crate: https://learn.microsoft.com/en-us/windows-server/security/guarded-fabric-shielded-vm/guarded-fabric-install-trusted-tpm-root-certificates. \
                     Error: {e:?}");
+                    }
                 }
+            } else {
+                println!("cargo::warning=No updated TPM CAB file is available from {source}");
             }
-        } else {
-            println!("cargo::warning=No updated TPM CAB file is available from {source}");
+        }
+        Err(e) => {
+            println!("cargo::warning=Failed to read response bytes from {source}: {e}");
         }
     }
 
@@ -286,8 +436,8 @@ pub async fn process_cab(
         let mut buf = vec![];
         match reader.read_to_end(&mut buf) {
             Ok(_) => {
-                println!("Reading {ta}");
-                let cf = if buf[0] != 0x30 {
+                println!("cargo::warning=Reading {ta}");
+                let cf = if buf.first() != Some(&0x30) {
                     match pem_rfc7468::decode_vec(&buf) {
                         Ok(b) => CertFile {
                             filename: ta,
@@ -387,10 +537,8 @@ pub async fn process_cab(
 
     match ta_serialization.serialize(CertificationPathBuilderFormats::Cbor) {
         Ok(graph) => {
-            if ta_cbor_hash != Sha256::digest(&graph).as_slice().to_vec() {
-                fs::write(ta_cbor, graph.as_slice())
-                    .expect("Unable to write generated CBOR file with trust anchor certificates");
-            }
+            fs::write(ta_cbor, graph.as_slice())
+                .expect("Unable to write generated CBOR file with trust anchor certificates");
         }
         Err(e) => {
             println!("cargo::warning=failed to write TA collection to a CBOR file. Ignoring and continuing. Error: {e:?}");
@@ -409,8 +557,8 @@ pub async fn process_cab(
         let mut buf = vec![];
         match reader.read_to_end(&mut buf) {
             Ok(_) => {
-                println!("Reading {ca}");
-                let cf = if buf[0] != 0x30 {
+                println!("cargo::warning=Reading {ca}");
+                let cf = if buf.first() != Some(&0x30) {
                     match pem_rfc7468::decode_vec(&buf) {
                         Ok(b) => CertFile {
                             filename: ca,
@@ -508,10 +656,8 @@ pub async fn process_cab(
     cert_source.find_all_partial_paths(&pe, &cps);
     match cert_source.serialize(CertificationPathBuilderFormats::Cbor) {
         Ok(graph) => {
-            if ca_cbor_hash != Sha256::digest(&graph).as_slice().to_vec() {
-                fs::write(all_ca_cbor, graph.as_slice())
-                    .expect("Unable to write generated CBOR file with CAs and partial paths");
-            }
+            fs::write(all_ca_cbor, graph.as_slice())
+                .expect("Unable to write generated CBOR file with CAs and partial paths");
         }
         Err(e) => {
             println!("cargo::warning=failed to write CAs and partial paths to a CBOR file. Ignoring and continuing. Error: {e:?}");
@@ -525,20 +671,22 @@ pub async fn process_cab(
     let mut cert_source_invalid = CertSource::new();
 
     // verify each CA cert, saving those that verify and discarding those that do not
-    for cf in ca_certs {
+    for (ii, cf) in ca_certs.iter().enumerate() {
         let mut valid = false;
         let mut errors = vec![];
         let mut paths: Vec<CertificationPath> = vec![];
-        if let Ok(cert) = PDVCertificate::try_from(cf.bytes.as_slice()) {
-            if pe
-                .get_paths_for_target(&cert, &mut paths, 0, cps.get_time_of_interest())
-                .is_ok()
-            {
-                if paths.is_empty() {
+        match PDVCertificate::try_from(cf.bytes.as_slice()) {
+            Ok(cert) => {
+                if let Err(e) =
+                    pe.get_paths_for_target(&cert, &mut paths, 0, cps.get_time_of_interest())
+                {
+                    println!("cargo::warning=encountered error while searching for certification paths for certificate[{ii}] from {}: {e}. Ignoring and continuing.", cf.filename);
+                    cert_source_invalid.push(cf.clone());
+                } else if paths.is_empty() {
                     if !known_building_issues.contains(&cf.filename.as_str()) {
-                        println!("cargo::warning=failed to find any certification paths for certificate from {}. Ignoring and continuing.", cf.filename);
+                        println!("cargo::warning=failed to find any certification paths for certificate[{ii}] from {}. Ignoring and continuing.", cf.filename);
                     }
-                    cert_source_invalid.push(cf);
+                    cert_source_invalid.push(cf.clone());
                     continue;
                 } else {
                     for path in paths.iter_mut() {
@@ -553,13 +701,19 @@ pub async fn process_cab(
                             }
                         }
                     }
+                    // if a certificate failed to validate and the failure is not known, log it and
+                    // save to a list of invalid certs. if validation succeeded or the failure is
+                    // known to be something that must be tolerated, add it to the list of valid certs.
                     if !valid && !known_validation_issues.contains(&cf.filename.as_str()) {
-                        println!("cargo::warning=failed to validate certificate from {}. Ignoring and continuing. Error: {:?}", cf.filename, errors);
-                        cert_source_invalid.push(cf);
+                        println!("cargo::warning=failed to validate certificate[{ii}] from {}. Ignoring and continuing. Error: {:?}", cf.filename, errors);
+                        cert_source_invalid.push(cf.clone());
                     } else {
-                        cert_source_valid.push(cf);
+                        cert_source_valid.push(cf.clone());
                     }
                 }
+            }
+            Err(e) => {
+                println!("cargo::warning=failed to parse certificate[{ii}] from {}. Ignoring and continuing. Error: {:?}", cf.filename, e);
             }
         };
     }
@@ -570,30 +724,40 @@ pub async fn process_cab(
 
     cert_source_valid.find_all_partial_paths(&pe, &cps);
 
-    // serialize only the CA certs for which a valid path was found
+    // serialize only the CA certs for which a valid path was found. This is the trust set the
+    // library ships (via include_bytes! of ca.cbor), so failure to produce it fails the build.
     match cert_source_valid.serialize(CertificationPathBuilderFormats::Cbor) {
         Ok(graph) => {
-            if ca_cbor_hash != Sha256::digest(&graph).as_slice().to_vec() {
-                fs::write(valid_ca_cbor, graph.as_slice())
-                    .expect("Unable to write generated CBOR file with CAs and partial paths");
-            }
+            fs::write(valid_ca_cbor, graph.as_slice())
+                .expect("Unable to write generated CBOR file with CAs and partial paths");
+            fs::write(ca_cbor, graph.as_slice())
+                .expect("Unable to write generated CBOR file with validated CAs for shipping");
+        }
+        Err(e) => {
+            panic!("failed to serialize the validated CA set that ships as ca.cbor: {e:?}");
+        }
+    }
+
+    match cert_source_invalid.serialize(CertificationPathBuilderFormats::Cbor) {
+        Ok(graph) => {
+            fs::write(invalid_ca_cbor, graph.as_slice())
+                .expect("Unable to write generated CBOR file with CAs and partial paths");
         }
         Err(e) => {
             println!("cargo::warning=failed to write CAs and partial paths to a CBOR file. Ignoring and continuing. Error: {e:?}");
         }
     }
 
-    match cert_source_invalid.serialize(CertificationPathBuilderFormats::Cbor) {
-        Ok(graph) => {
-            if ca_cbor_hash != Sha256::digest(&graph).as_slice().to_vec() {
-                fs::write(invalid_ca_cbor, graph.as_slice())
-                    .expect("Unable to write generated CBOR file with CAs and partial paths");
-            }
-        }
-        Err(e) => {
-            println!("cargo::warning=failed to write CAs and partial paths to a CBOR file. Ignoring and continuing. Error: {e:?}");
-        }
-    }
+    // Write manifest with hashes of all current files for next-run short-circuit
+    let final_manifest = BuildManifest::from_files(
+        file_name,
+        ta_cbor,
+        valid_ca_cbor,
+        invalid_ca_cbor,
+        all_ca_cbor,
+        ca_cbor,
+    );
+    final_manifest.write(BUILD_MANIFEST);
 
     for skipped in skipped_files {
         if !known_skips.contains(&skipped.as_str()) {
