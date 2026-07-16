@@ -25,7 +25,7 @@ pem-rfc7468 = { version="1.0.0", features = ["alloc"]}
 x509-cert = { version = "0.3.0", features = ["hazmat"] }
 
 certval = { git = "https://github.com/carl-wallace/rust-pki.git", features = ["std", "rsa"], branch = "main"}
-tpm_cab_verify = {git = "https://github.com/carl-wallace/tpm_cab_verify.git", branch = "updates"}
+tpm_cab_verify = {git = "https://github.com/carl-wallace/tpm_cab_verify.git", branch = "main"}
 
 rsa = "0.10.0-rc.18"
 sha1 = "0.11.0"
@@ -44,7 +44,7 @@ pem-rfc7468 = { version="1.0.0", features = ["alloc"]}
 x509-cert = "0.3.0"
 
 certval = { git = "https://github.com/carl-wallace/rust-pki.git", features = ["std", "rsa"], branch = "main"}
-tpm_cab_verify = {git = "https://github.com/carl-wallace/tpm_cab_verify.git", branch = "updates"}
+tpm_cab_verify = {git = "https://github.com/carl-wallace/tpm_cab_verify.git", branch = "main"}
 
 rsa = { version = "0.10.0-rc.18", features = ["pkcs5", "encoding"] }
 sha1 = { version = "0.11.0", features = ["oid"] }
