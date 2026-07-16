@@ -5,56 +5,56 @@ edition = "2021"
 rust-version = "1.80.1"
 
 [dependencies]
-base64ct = { version="1.8.0", features = ["alloc"] }
-pem-rfc7468 = { version="1.0.0-rc.3", features = ["alloc"]}
-x509-cert = "0.3.0-rc.0"
+base64ct = { version="1.8.3", features = ["alloc"] }
+pem-rfc7468 = { version="1.0.0", features = ["alloc"]}
+x509-cert = "0.3.0"
 
 certval = { git = "https://github.com/carl-wallace/rust-pki.git", features = ["std", "rsa"], branch = "main"}
 
-sha2 = "0.11.0-rc.0"
+sha2 = "0.11.0"
 
 cab = "0.6.0"
-log = "0.4.29"
-reqwest = "0.13.2"
-tokio = { version = "1.49.0", features = ["full", "time", "rt-multi-thread"]}
+log = "0.4.33"
+reqwest = "0.13.4"
+tokio = { version = "1.52.4", features = ["full", "time", "rt-multi-thread"]}
 
 [dev-dependencies]
-base64ct = { version="1.8.0", features = ["alloc"] }
-der = { version = "0.8.0-rc.4", features = ["alloc", "derive", "oid", "pem"] }
-pem-rfc7468 = { version="1.0.0-rc.3", features = ["alloc"]}
-x509-cert = { version = "0.3.0-rc.0", features = ["hazmat"] }
+base64ct = { version="1.8.3", features = ["alloc"] }
+der = { version = "0.8.1", features = ["alloc", "derive", "oid", "pem"] }
+pem-rfc7468 = { version="1.0.0", features = ["alloc"]}
+x509-cert = { version = "0.3.0", features = ["hazmat"] }
 
 certval = { git = "https://github.com/carl-wallace/rust-pki.git", features = ["std", "rsa"], branch = "main"}
 tpm_cab_verify = {git = "https://github.com/carl-wallace/tpm_cab_verify.git", branch = "updates"}
 
-rsa = "0.10.0-rc.0"
-sha1 = "0.11.0-rc.0"
-sha2 = "0.11.0-rc.0"
+rsa = "0.10.0-rc.18"
+sha1 = "0.11.0"
+sha2 = "0.11.0"
 
 cab = "0.6.0"
 log4rs = "1.4.0"
-reqwest = "0.13.2"
-tokio = { version = "1.49.0", features = ["full", "time", "rt-multi-thread"]}
+reqwest = "0.13.4"
+tokio = { version = "1.52.4", features = ["full", "time", "rt-multi-thread"]}
 walkdir = "2.5.0"
 
 [build-dependencies]
-base64ct = { version="1.8.0", features = ["alloc"] }
-der = { version = "0.8.0-rc.6", features = ["alloc", "derive", "oid", "pem"] }
-pem-rfc7468 = { version="1.0.0-rc.3", features = ["alloc"]}
-x509-cert = "0.3.0-rc.0"
+base64ct = { version="1.8.3", features = ["alloc"] }
+der = { version = "0.8.1", features = ["alloc", "derive", "oid", "pem"] }
+pem-rfc7468 = { version="1.0.0", features = ["alloc"]}
+x509-cert = "0.3.0"
 
 certval = { git = "https://github.com/carl-wallace/rust-pki.git", features = ["std", "rsa"], branch = "main"}
 tpm_cab_verify = {git = "https://github.com/carl-wallace/tpm_cab_verify.git", branch = "updates"}
 
-rsa = { version = "0.10.0-rc.1", features = ["pkcs5", "encoding"] }
-sha1 = { version = "0.11.0-rc.0", features = ["oid"] }
-sha2 = "0.11.0-rc.0"
+rsa = { version = "0.10.0-rc.18", features = ["pkcs5", "encoding"] }
+sha1 = { version = "0.11.0", features = ["oid"] }
+sha2 = "0.11.0"
 
 cab = "0.6.0"
-reqwest = "0.13.2"
+reqwest = "0.13.4"
 serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
-tokio = { version = "1.49.0", features = ["full", "time", "rt-multi-thread"]}
+serde_json = "1.0.150"
+tokio = { version = "1.52.4", features = ["full", "time", "rt-multi-thread"]}
 
 [features]
 unverified_amd_roots = []
@@ -67,7 +67,6 @@ debug = true
 cms        = { git = "https://github.com/RustCrypto/formats.git" }
 cmpv2      = { git = "https://github.com/RustCrypto/formats.git" }
 crmf       = { git = "https://github.com/RustCrypto/formats.git" }
-pkcs12     = { git = "https://github.com/RustCrypto/formats.git" }
 x509-ocsp  = { git = "https://github.com/RustCrypto/formats.git" }
 x509-tsp   = { git = "https://github.com/RustCrypto/formats.git" }
 
