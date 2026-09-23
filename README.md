@@ -5,29 +5,30 @@ attestations from TPM-backed virtual smart cards (VSCs). The focus is on attesta
 Purebred-enabled certification authority (CA). Attestations may be presented to a portal during pre-enrollment or to a
 CA as part of a SCEP request. 
 
-The certificates included in this crate are assumed to have been obtained per the instructions [here](https://learn.microsoft.com/en-us/windows-server/security/guarded-fabric-shielded-vm/guarded-fabric-install-trusted-tpm-root-certificates)
-with the resulting manually verified `TrustedTpm.cab` file placed at the root of this crate. A build script processes
-the CAB file to prepare the artifacts used by the functional interface of the crate. The build script will attempt to 
-download an updated file, and if one is found, validate it, save it to the repo and use it for building. A downloaded
-file whose contents are older than the local copy (per the date in version.txt) will not replace the local file, guarding
-against an upstream rollback. CAB verification is performed via the `tpm_cab_verify` crate. Certificates from the CAB
-file that cannot be validated will be discarded with a log message emitted. The validated CA set is written to ca.cbor,
-which the library embeds, and the build fails if ca.cbor does not match the validated output.
+The material comes from the [`certval_stores_tpm`](https://github.com/carl-wallace/certval-stores) provider crate.
+That crate commits the `TrustedTpm.cab` it was generated from, verifies the cabinet's Authenticode signature when it is
+refreshed, and carries the conformance tests for the trust set. This crate holds no cabinet, embeds no CBOR and runs no
+build script: it is a facade that presents the provider's material through the interface this crate has always had, so
+that `attestation_verifier` compiles against it unchanged. It should be retired once that consumer migrates to the
+provider directly.
 
 ## Features
 
-Two features are defined to enable builds to feature certificates that would otherwise be discarded due to validation errors.
-
-`unverified_amd_roots` will cause inclusion of an AMD engineering root that is not included in the CAB file and was obtained
-from an http URI indicated in an authorityInfoAccess extension.
-
-`sha1_certs` will cause a signature verification function that supports RSA with SHA-1 signatures when processing CAB contents.
+None. The `unverified_amd_roots` and `sha1_certs` features configured the build script's own verification of the
+cabinet, and went with it. What the trust set contains, and which algorithms it takes to parse and validate, are now
+`certval_stores_tpm`'s to state.
 
 ## Known issues
 
-Using a CAB file from December 24, 2024, the following errors were observed when attempting to verify intermediate CA
-certificates during building. Some can be addressed using features. Others will remain unaddressed until the `certval`
-crate is updated to address the issue.
+The errors below were recorded against a CAB file from December 24, 2024, while the build script verified each
+intermediate at build time. They are kept because they describe the TPM PKI rather than any one build, and the vendor
+behaviour they document has not changed.
+
+Two things about them no longer hold, both worth knowing before reading on. The set is no longer filtered by a
+build-time verification, so nothing here is silently discarded; and the equivalent check now lives in the provider as
+`every_intermediate_validates_to_a_root`, which validates every intermediate against the embedded anchors with the time
+of interest disabled and currently reports no failures at all. Validated at the current time instead, 375 of 2,480 fail,
+every one of them for expiry -- 366 of those had already expired when the cabinet was published.
 
 ### AMD
 
