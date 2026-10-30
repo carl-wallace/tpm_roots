@@ -4,28 +4,20 @@ version = "0.1.2"
 edition = "2021"
 # Follows certval's MSRV: the material now arrives through certval_stores_tpm, and certval is what
 # sets the floor for everything in that chain.
-rust-version = "1.85"
+rust-version = "1.88"
 
 [dependencies]
 # The material. `default-features = false` keeps `reqwest-client` off: nothing here fetches, and the
 # HTTP stack is compiled by everyone who depends on a provider crate.
-certval_stores_core = { git = "https://github.com/carl-wallace/certval-stores.git", branch = "main", default-features = false }
-certval_stores_tpm = { git = "https://github.com/carl-wallace/certval-stores.git", branch = "main", default-features = false, features = ["tpm"] }
+certval_stores_core = { version = "0.1.0-rc.1", default-features = false }
+certval_stores_tpm = { version = "1.0.0-rc.1", default-features = false, features = ["tpm"] }
 
 # `default-features = false` drops `remote`, and with it reqwest and the url -> idna -> icu
-# stack. Nothing here fetches: the material arrives through certval_stores_tpm. Dropping it is
-# also what lets this crate hold certval's own MSRV, since those crates require 1.88.
-certval = { git = "https://github.com/carl-wallace/rust-pki.git", default-features = false, features = ["std", "rsa"], branch = "main"}
+# stack. Nothing here fetches: the material arrives through certval_stores_tpm.
+certval = { version = "0.2.0-rc.1", default-features = false, features = ["std", "rsa"] }
 x509-cert = "0.3.0"
 
 log = "0.4.33"
 
 [dev-dependencies]
-certval = { git = "https://github.com/carl-wallace/rust-pki.git", default-features = false, features = ["std", "rsa"], branch = "main"}
-
-# certval takes these from git rather than crates.io, and a patch table does not travel with a git
-# dependency -- so every crate that depends on certval restates them. `cmpv2`, `crmf` and `x509-tsp`
-# were here for the CAB-processing build script and are gone with it.
-[patch.crates-io]
-cms        = { git = "https://github.com/RustCrypto/formats.git" }
-x509-ocsp  = { git = "https://github.com/RustCrypto/formats.git" }
+certval = { version = "0.2.0-rc.1", default-features = false, features = ["std", "rsa"] }
