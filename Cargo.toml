@@ -4,7 +4,7 @@ version = "0.1.2"
 edition = "2021"
 # Follows certval's MSRV: the material now arrives through certval_stores_tpm, and certval is what
 # sets the floor for everything in that chain.
-rust-version = "1.88"
+rust-version = "1.89"
 
 [dependencies]
 # The material. `default-features = false` keeps `reqwest-client` off: nothing here fetches, and the
