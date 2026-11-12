@@ -14,10 +14,10 @@ certval_stores_tpm = { version = "1.0.0-rc.1", default-features = false, feature
 
 # `default-features = false` drops `remote`, and with it reqwest and the url -> idna -> icu
 # stack. Nothing here fetches: the material arrives through certval_stores_tpm.
-certval = { version = "0.2.0-rc.1", default-features = false, features = ["std", "rsa"] }
+certval = { version = "0.2.0-rc.3", default-features = false, features = ["std", "rsa"] }
 x509-cert = "0.3.0"
 
 log = "0.4.33"
 
 [dev-dependencies]
-certval = { version = "0.2.0-rc.1", default-features = false, features = ["std", "rsa"] }
+certval = { version = "0.2.0-rc.3", default-features = false, features = ["std", "rsa"] }
