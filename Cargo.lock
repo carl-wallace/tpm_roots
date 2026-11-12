@@ -39,13 +39,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2f6c7dbe95a6ed67ad9f18e57daf93a2f034c524b99fd2b76d18fdfeb6660aa"
 dependencies = [
  "hybrid-array",
+ "zeroize",
 ]
 
 [[package]]
 name = "certval"
-version = "0.2.0-rc.1"
+version = "0.2.0-rc.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc6f0bddbf3de03eac84e36737d40f788805a49472d25c00f1e2c0b784757995"
+checksum = "db144332ad5a5b7f686e41ac9685b135bc0d996b38c5e8fafb358ca261fd0dbe"
 dependencies = [
  "base64ct",
  "bitvec",
@@ -76,6 +77,7 @@ dependencies = [
  "subtle-encoding",
  "walkdir",
  "x509-cert",
+ "x509-ocsp",
 ]
 
 [[package]]
@@ -151,9 +153,9 @@ checksum = "0c9ea0ac24bc397ab3c98583a3c9ba74fa56b09a4449bbe172b9b1ddb016027a"
 
 [[package]]
 name = "cms"
-version = "0.3.0-rc.0"
+version = "0.3.0-rc.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a7e16fb99a745fd8c7327eeb7deb9f667c03320f4f61d23c1927a55813b4466"
+checksum = "d089eddc8a5c984d82fcf1427367a6fa0d019d5af04b6e3197e86c8989533b8d"
 dependencies = [
  "const-oid",
  "der",
@@ -190,9 +192,9 @@ checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
 
 [[package]]
 name = "crypto-bigint"
-version = "0.7.5"
+version = "0.7.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a52aa3fcda4e6302a9f48734f234d35d4721b96f8fe07d073f07ce9df4f0271"
+checksum = "914c195c4d7fbc5ed7f88d14cbf85914d5c664967658d43404b263913a477e82"
 dependencies = [
  "cpubits",
  "ctutils",
@@ -226,9 +228,9 @@ dependencies = [
 
 [[package]]
 name = "ctutils"
-version = "0.4.2"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d5515a3834141de9eafb9717ad39eea8247b5674e6066c404e8c4b365d2a29e"
+checksum = "261af4dc7a06ea8a527a8717d8cbba3417530d6ea14e1edb3de6b67806be474f"
 dependencies = [
  "cmov",
  "subtle",
@@ -268,6 +270,7 @@ dependencies = [
  "const-oid",
  "crypto-common",
  "ctutils",
+ "zeroize",
 ]
 
 [[package]]
@@ -459,9 +462,9 @@ dependencies = [
 
 [[package]]
 name = "pkcs1"
-version = "0.8.0-rc.5"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f485dbafe293ea6ccaa7d82bc591651a796eb8a9aec3df040b057b706073dbc3"
+checksum = "6250dd7321adbe93d12b750aee0ced159fd13e77f625edcdf1cb6f83cd99f650"
 dependencies = [
  "der",
  "spki",
@@ -565,17 +568,20 @@ dependencies = [
 
 [[package]]
 name = "rsa"
-version = "0.10.0-rc.19"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33405e321e16ef941ca66e254f6904c3aafd3c7ff001fb88bf11c73eb75c2b85"
+checksum = "23e77fd77e0dea28b3011fd62d15445b7de7959333b0276d930e03be0f755699"
 dependencies = [
  "const-oid",
  "crypto-bigint",
+ "crypto-common",
  "crypto-primes",
  "digest",
+ "hmac",
  "pkcs1",
  "pkcs8",
  "rand_core",
+ "sha2",
  "signature",
  "spki",
  "zeroize",
@@ -854,6 +860,18 @@ dependencies = [
  "der",
  "spki",
  "tls_codec",
+]
+
+[[package]]
+name = "x509-ocsp"
+version = "0.3.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c9adad5e5ba07625d8c85ded0fcbc2bc20a7fc4d9f5db6fbde3141065e67befc"
+dependencies = [
+ "const-oid",
+ "der",
+ "spki",
+ "x509-cert",
 ]
 
 [[package]]
