@@ -44,9 +44,9 @@ dependencies = [
 
 [[package]]
 name = "certval"
-version = "0.2.0-rc.3"
+version = "0.2.0-rc.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db144332ad5a5b7f686e41ac9685b135bc0d996b38c5e8fafb358ca261fd0dbe"
+checksum = "7bec397c6deb5ebc13d05b628e1690ccd01b90ee480bae4630dc73600f0865c8"
 dependencies = [
  "base64ct",
  "bitvec",
